@@ -51,7 +51,6 @@ nav:
     - efficiency: api/efficiency.md
     - fit: api/fit.md
     - kinematics: api/kinematics.md
-    - latex: api/latex.md
     - plotting: api/plotting.md
     - root_helpers: api/root_helpers.md
     - utils: api/utils.md

@@ -46,7 +46,6 @@ require_root()  # Raises ImportError when ROOT is missing
 | [efficiency](api/efficiency.md) | Efficiency estimation |
 | [fit](api/fit.md) | RooFit-based fitting helpers |
 | [kinematics](api/kinematics.md) | Kinematic calculations |
-| [latex](api/latex.md) | LaTeX formatting helpers |
 | [plotting](api/plotting.md) | Plotting utilities |
 | [root_helpers](api/root_helpers.md) | PyROOT convenience wrappers |
 | [utils](api/utils.md) | General utilities |
