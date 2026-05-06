@@ -1,6 +1,22 @@
 from pathlib import Path
+import subprocess
+import sys
 
-from analysis_helpers.utils import get_matching_files, get_temporary_file_name
+import pytest
+
+from analysis_helpers.utils import get_matching_files, get_temporary_file_name, run_command
+
+
+def test_run_command_returns_completed_process():
+    result = run_command(f'"{sys.executable}" -c "print(123)"')
+
+    assert result.stdout.strip() == "123"
+    assert result.returncode == 0
+
+
+def test_run_command_raises_on_failure():
+    with pytest.raises(subprocess.CalledProcessError):
+        run_command(f'"{sys.executable}" -c "import sys; sys.exit(3)"')
 
 
 def test_get_temporary_file_name_returns_existing_path():

@@ -23,9 +23,9 @@ import matplotlib.pyplot as plt
 import mplhep
 mplhep.style.use('LHCb2')
 from array import array
-from root_helpers import DefineTree, LoadCompiledLibraries, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPLText
-from utils import get_temporary_file_name
-from plotting import configure_plot_layout
+from .root_helpers import DefineTree, LoadCompiledLibraries, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPLText
+from .utils import get_temporary_file_name
+from .plotting import configure_plot_layout
 import copy
 
 
@@ -1320,7 +1320,7 @@ class FitUtils:
 
     def fitToDataAlt(self, model, data, outname="",
                     kNLL=True, kChi=False, kMinos=False, kExtended = False,
-                    nthreads=1, range=None, poissonError = False, constraints=r.RooArgSet(), 
+                    nthreads=1, range=None, poissonError = False, constraints=None,
                     kSilent=False, kAsymptotic=False ):
         """Fit the model to the data (alternative implementation with enhanced options)
 
@@ -1351,6 +1351,9 @@ class FitUtils:
         res = r.RooFitResult()
         timer = r.TStopwatch()
         optionsList = None
+
+        if constraints is None:
+            constraints = r.RooArgSet()
 
         try:
             # Check if data is weighted

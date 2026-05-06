@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import mplhep
 import math
-from kinematics import estar2, estar3
-from efficiency import get_efficiency, get_efficiency_array
-from asymmetry import get_asymmetry_array
+from .kinematics import estar2, estar3
+from .efficiency import get_efficiency, get_efficiency_array
+from .asymmetry import get_asymmetry_array
 from matplotlib.colors import LogNorm
 # mplhep.style.use("LHCb2")
 

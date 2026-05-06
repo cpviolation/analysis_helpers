@@ -3,29 +3,29 @@ import os
 import subprocess
 import tempfile
 
+
 def run_command(command, input_text=None):
-    """execute a shell command and print the output
+    """Execute a shell command and return the completed subprocess result.
 
     Args:
         command (str): the shell command to execute
         input_text (str, optional): the input text to the command. Defaults to None.
-    """    
-    try:
-        # Execute the command, providing input if necessary
-        result = subprocess.run(
-            command, 
-            input=input_text, 
-            text=True, 
-            shell=True, 
-            check=True, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE
-        )
-        print(result.stdout)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running command: {e}")
-        print(e.stderr)
-        exit(1)
+
+    Returns:
+        subprocess.CompletedProcess: completed subprocess result with captured output.
+
+    Raises:
+        subprocess.CalledProcessError: if the command exits with a non-zero status.
+    """
+    return subprocess.run(
+        command,
+        input=input_text,
+        text=True,
+        shell=True,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
 
 def get_temporary_file_name():
