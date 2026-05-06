@@ -3,6 +3,8 @@ name: Run tests
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -25,4 +27,18 @@ jobs:
         run: uv pip install --system ".[test]"
 
       - name: Run kinematics tests
-        run: pytest tests/test_kinematics.py
+        run: pytest tests/test_kinematics.py --cov=analysis_helpers --cov-report=term-missing --cov-report=xml
+
+      - name: Publish coverage summary
+        run: |
+          echo '## Coverage summary' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          coverage report -m >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
