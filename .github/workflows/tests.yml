@@ -26,8 +26,8 @@ jobs:
       - name: Install package and test dependencies
         run: uv pip install --system ".[test]"
 
-      - name: Run kinematics tests
-        run: pytest tests/test_kinematics.py --cov=analysis_helpers --cov-report=term-missing --cov-report=xml
+      - name: Run test suite
+        run: pytest tests --cov=analysis_helpers --cov-report=term-missing --cov-report=xml
 
       - name: Publish coverage summary
         run: |
