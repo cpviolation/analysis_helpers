@@ -397,7 +397,7 @@ def plot_dalitz(m1, m2, xlab='', ylab='', masses=[], boundary=False,
         X = np.linspace(m1min, m1max, 10000)
         sqrtX = np.sqrt(X)
         # now calculate Ymin and Ymax
-        est2, est3 = Estar2(sqrtX, masses), Estar3(sqrtX, masses)
+        est2, est3 = estar2(sqrtX, masses), estar3(sqrtX, masses)
         Ymin = np.power(est2+est3,2) - np.power(np.sqrt(est2*est2-masses[2]*masses[2])+ np.sqrt(est3*est3-masses[3]*masses[3]),2)
         Ymax = np.power(est2+est3,2) - np.power(np.sqrt(est2*est2-masses[2]*masses[2])- np.sqrt(est3*est3-masses[3]*masses[3]),2)
         ax.plot(X, Ymin, color='r')

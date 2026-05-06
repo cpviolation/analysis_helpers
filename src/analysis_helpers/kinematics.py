@@ -1,6 +1,24 @@
 #import awkward as ak
 import numpy as np
 import scipy.constants
+import vector
+
+
+def _validate_four_masses(masses):
+    """Return masses as a 1D numpy array with exactly four elements."""
+    masses_array = np.asarray(masses)
+    if masses_array.ndim != 1 or masses_array.shape[0] != 4:
+        raise ValueError(
+            f"masses must be a 1D array-like with exactly 4 elements, got shape {masses_array.shape}"
+        )
+    return masses_array
+
+
+def _vector_object(**components):
+    """Build a vector object that preserves scalar inputs when possible."""
+    if all(np.ndim(value) == 0 for value in components.values()):
+        return vector.obj(**components)
+    return vector.array(components)
 
 def ip_all(a_x,a_y,a_z,n_x,n_y,n_z,p_x,p_y,p_z):
     r"""Function to calculate the impact parameter of a point $\vec{p}$ from a line 
@@ -31,13 +49,13 @@ def doca(Ax,Ay,Az,Atx,Aty,
         Ax (float): x-coordinate of a point on line A
         Ay (float): y-coordinate of a point on line A
         Az (float): z-coordinate of a point on line A
-        Atx (float): x-component of the direction vector of line A
-        Aty (float): y-component of the direction vector of line A
+        Atx (float): x-component of the local direction (slope) vector of line A
+        Aty (float): y-component of the local direction (slope) vector of line A
         Bx (float): x-coordinate of a point on line B
         By (float): y-coordinate of a point on line B
         Bz (float): z-coordinate of a point on line B
-        Btx (float): x-component of the direction vector of line B
-        Bty (float): y-component of the direction vector of line B
+        Btx (float): x-component of the local direction (slope) vector of line B
+        Bty (float): y-component of the local direction (slope) vector of line B
 
     Returns:
         float: the Distance of Closest Approach (DOCA) between the two lines
@@ -162,9 +180,8 @@ def mass(px,py,pz,pe):
 
     Returns:
         float: invariant mass of the particle
-    """    
-    m = np.sqrt( pe*pe - px*px - py*py - pz*pz )
-    return m
+    """
+    return _vector_object(px=px, py=py, pz=pz, E=pe).mass
 
 def momentum(px,py,pz):
     """Calculate the momentum (P) of a particle.
@@ -176,9 +193,8 @@ def momentum(px,py,pz):
 
     Returns:
         float: momentum of the particle
-    """    
-    p = np.sqrt(px*px + py*py + pz*pz)
-    return p
+    """
+    return _vector_object(px=px, py=py, pz=pz).mag
 
 def pt(px,py):
     """Calculate the transverse momentum (PT) of a particle.
@@ -189,19 +205,19 @@ def pt(px,py):
 
     Returns:
         float: transverse momentum of the particle
-    """    
-    pt = np.sqrt(px*px + py*py)
-    return pt
+    """
+    pz = 0.0 if np.ndim(px) == 0 else np.zeros_like(np.asarray(px, dtype=float))
+    return _vector_object(px=px, py=py, pz=pz).pt
 
-def rapidity(pa,pz):
-    """Calculate the rapidity momentum (T) of a particle.
+def slope(pa,pz):
+    """Calculate the slope of a particle.
 
     Args:
         pa (float): transverse momentum of the particle
         pz (float): longitudinal momentum of the particle
 
     Returns:
-        float: rapidity momentum of the particle
+        float: slope of the particle
     """    
     t = pa/pz
     return t
@@ -216,12 +232,11 @@ def pseudorapidity(px,py,pz):
 
     Returns:
         float: the pseudorapidity (ETA) of the particle
-    """    
-    eta = np.arctanh(pz/P(px,py,pz))
-    return eta
+    """
+    return _vector_object(px=px, py=py, pz=pz).eta
 
 def estar2(m12,masses):
-    """Calculate the E* of a two-body system.
+    """Calculate the energy of one of the daughter particles in the rest frame (E*) of a specific two-body subsystem.
 
     Args:
         m12 (float): invariant mass of the first two particles
@@ -230,12 +245,13 @@ def estar2(m12,masses):
     Returns:
         float: the E* of the two-body system
     """
+    masses = _validate_four_masses(masses)
     Est2 = m12*m12 - masses[1]*masses[1] + masses[2]*masses[2]
     Est2/= 2*m12
     return Est2
 
 def estar3(m12,masses):
-    """Calculate the E* of a three-body system.
+    """Calculate the energy of one of the daughter particles in the rest frame (E*) of a specific three-body system.
 
     Args:
         m12 (float): invariant mass of the first two particles
@@ -244,6 +260,7 @@ def estar3(m12,masses):
     Returns:
         float: the E* of the three-body system
     """
+    masses = _validate_four_masses(masses)
     Est3 = masses[0]*masses[0]- m12*m12 - masses[3]*masses[3]
     Est3/= 2*m12
     return Est3
