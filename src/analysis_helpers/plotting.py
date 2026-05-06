@@ -430,10 +430,11 @@ def plot_removed(data, selection, selection_label=None,
     if 'weights' in kwargs:
         wei = kwargs['weights']
         kwargs.pop('weights')
+    sel_wei = wei[~selection] if wei is not None else None
     fig, ax = plot_hist(data, yerr=yerr, name=name, unit=unit, label=label, 
                         weights=wei, **kwargs)
     sel_label = selection_label if selection_label is not None else '(removed)'
-    ax.hist(data[~selection], label=label+' '+sel_label, weights=wei[~selection], **kwargs)
+    ax.hist(data[~selection], label=label+' '+sel_label, weights=sel_wei, **kwargs)
     ax.legend()
     return fig, ax
 
