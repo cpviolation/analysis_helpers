@@ -18,6 +18,7 @@ from analysis_helpers.kinematics import (
     pseudorapidity,
     pt,
     slope,
+    phi,
 )
 
 
@@ -61,10 +62,12 @@ def test_vector_based_kinematics_match_expected_values():
     px, py, pz, energy = 3.0, 4.0, 12.0, 14.0
     reference = vector.obj(px=px, py=py, pz=pz, E=energy)
 
-    assert _as_scalar(mass(px, py, pz, energy)) == pytest.approx(_as_scalar(reference.mass))
+    assert _as_scalar(mass(px, py, pz, energy)) == pytest.approx(
+        _as_scalar(reference.mass))
     assert _as_scalar(momentum(px, py, pz)) == pytest.approx(13.0)
     assert _as_scalar(pt(px, py)) == pytest.approx(5.0)
     assert _as_scalar(pseudorapidity(px, py, pz)) == pytest.approx(_as_scalar(reference.eta))
+    assert _as_scalar(phi(px, py, pz)) == pytest.approx(_as_scalar(reference.phi))
 
 
 def test_estar_helpers_compute_expected_values():

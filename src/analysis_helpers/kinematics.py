@@ -235,6 +235,19 @@ def pseudorapidity(px,py,pz):
     """
     return _vector_object(px=px, py=py, pz=pz).eta
 
+def phi(px,py,pz):
+    """Calculate the azimuthal angle (PHI) of a particle.
+
+    Args:
+        px (float): x-component of the particle's momentum
+        py (float): y-component of the particle's momentum
+        pz (float): z-component of the particle's momentum
+
+    Returns:
+        float: the azimuthal angle (PHI) of the particle
+    """
+    return _vector_object(px=px, py=py, pz=pz).phi
+
 def estar2(m12,masses):
     """Calculate the energy of one of the daughter particles in the rest frame (E*) of a specific two-body subsystem.
 

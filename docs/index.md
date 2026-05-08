@@ -4,14 +4,20 @@ Utilities for HEP analysis workflows, including optional PyROOT-based helpers.
 
 ## Installation
 
-```bash
+<!-- ```bash
 pip install analysis_helpers
+``` -->
+```bash
+pip install git+ssh://github.com/cpviolation/analysis_helpers.git
 ```
 
 To install with documentation dependencies:
 
+<!-- ```bash
+pip install analysis_helpers[docs]
+``` -->
 ```bash
-pip install "analysis_helpers[docs]"
+pip install git+ssh://github.com/cpviolation/analysis_helpers.git[docs]"
 ```
 
 ## Checking ROOT availability
