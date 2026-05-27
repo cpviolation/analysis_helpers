@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from analysis_helpers import io
 
@@ -30,6 +31,22 @@ class _FakeFile:
         if key != self._tree_name:
             raise KeyError(key)
         return self._tree
+
+
+def test_load_data_reads_lines(tmp_path):
+    data_file = tmp_path / "sample.txt"
+    data_file.write_text("a\nb\nc\n")
+
+    out = io.load_data(str(data_file))
+
+    assert out == ["a", "b", "c"]
+
+
+def test_load_data_raises_for_missing_file(tmp_path):
+    missing = tmp_path / "missing.txt"
+
+    with pytest.raises(FileNotFoundError):
+        io.load_data(str(missing))
 
 
 def test_load_df_incremental_combines_rows(monkeypatch):

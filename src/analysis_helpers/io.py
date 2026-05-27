@@ -5,6 +5,22 @@ import os
 from pathlib import Path
 
 
+def load_data(filename):
+    """Load data from a file
+
+    Args:
+        filename (str): the name of the file to load
+
+    Returns:
+        list: the data from the file
+    """
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f'File not found: {filename}')
+    with open(filename, 'r') as f:
+        data = f.read().splitlines()
+    return data
+
+
 def iter_file_dfs(paths, branches, tree_name, chunk_size=100_000, progress=True):
     """Yield one DataFrame per ROOT file.
 
