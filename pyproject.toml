@@ -10,6 +10,7 @@ dependencies = [
     "mplhep>=1.1.2",
     "pandas>=3.0.2",
     "scipy>=1.17.1",
+    "tqdm>=4.67.3",
     "uproot>=5.7.4",
     "vector>=1.4",
 ]
