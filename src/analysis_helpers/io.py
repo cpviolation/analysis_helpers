@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
+from typing import Iterable, Iterator
 from tqdm import tqdm
 import uproot
 import pandas as pd
@@ -21,7 +24,35 @@ def load_data(filename):
     return data
 
 
-def iter_file_dfs(paths, branches, tree_name, chunk_size=100_000, progress=True):
+def _load_single_file_df(path, branches, tree_name, chunk_size) -> tuple[str, pd.DataFrame] | None:
+    """Read one ROOT file into a dataframe.
+
+    Returns:
+        tuple[str, pandas.DataFrame] | None: ``(path, dataframe)`` when data
+        is read successfully, otherwise ``None``.
+    """
+    try:
+        with uproot.open(path) as f:
+            tree = f[tree_name]
+            parts = []
+            for part in tree.iterate(branches, library='pd', step_size=chunk_size):
+                parts.append(part)
+            if parts:
+                return path, pd.concat(parts, ignore_index=True)
+    except Exception:
+        # skip unreadable files
+        return None
+    return None
+
+
+def iter_file_dfs(
+    paths: Iterable[str],
+    branches,
+    tree_name,
+    chunk_size=100_000,
+    progress=True,
+    n_workers=1,
+) -> Iterator[tuple[str, pd.DataFrame]]:
     """Yield one DataFrame per ROOT file.
 
     The function opens each file with uproot, iterates a tree in chunks,
@@ -34,27 +65,46 @@ def iter_file_dfs(paths, branches, tree_name, chunk_size=100_000, progress=True)
         tree_name: Name of the TTree inside each file.
         chunk_size: Number of entries per chunk while iterating.
         progress: If True, wrap file iteration with a tqdm progress bar.
+        n_workers: Number of worker threads used to load files. Use ``1`` for
+            sequential loading.
 
     Yields:
         tuple[str, pandas.DataFrame]: Pair ``(path, dataframe)`` for each
         readable file containing at least one chunk.
     """
-    iterator = tqdm(paths, desc='Loading files') if progress else paths
-    for p in iterator:
-        try:
-            with uproot.open(p) as f:
-                tree = f[tree_name]
-                parts = []
-                for part in tree.iterate(branches, library='pd', step_size=chunk_size):
-                    parts.append(part)
-                if parts:
-                    yield p, pd.concat(parts, ignore_index=True)
-        except Exception:
-            # skip unreadable files
-            continue
+    if n_workers < 1:
+        raise ValueError('n_workers must be >= 1')
+
+    if n_workers == 1:
+        iterator = tqdm(paths, desc='Loading files') if progress else paths
+        for p in iterator:
+            result = _load_single_file_df(p, branches, tree_name, chunk_size)
+            if result is not None:
+                yield result
+        return
+
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+        mapped = executor.map(
+            _load_single_file_df,
+            paths,
+            repeat(branches),
+            repeat(tree_name),
+            repeat(chunk_size),
+        )
+        iterator = tqdm(mapped, desc='Loading files') if progress else mapped
+        for result in iterator:
+            if result is not None:
+                yield result
 
 
-def load_df_incremental(paths, branches, tree_name, chunk_size=100_000, progress=True):
+def load_df_incremental(
+    paths,
+    branches,
+    tree_name,
+    chunk_size=100_000,
+    progress=True,
+    n_workers=1,
+):
     """Load and concatenate data from multiple ROOT files.
 
     This function consumes :func:`iter_file_dfs` and performs one final
@@ -66,6 +116,8 @@ def load_df_incremental(paths, branches, tree_name, chunk_size=100_000, progress
         tree_name: Name of the TTree inside each file.
         chunk_size: Number of entries per chunk while iterating.
         progress: If True, show a file-level progress bar.
+        n_workers: Number of worker threads used to load files. Use ``1`` for
+            sequential loading.
 
     Returns:
         pandas.DataFrame: Concatenated dataframe for all readable files.
@@ -74,7 +126,14 @@ def load_df_incremental(paths, branches, tree_name, chunk_size=100_000, progress
     """
     # Efficient final concatenation, while still processing one file at a time
     all_parts = []
-    for _, file_df in iter_file_dfs(paths, branches, tree_name, chunk_size=chunk_size, progress=progress):
+    for _, file_df in iter_file_dfs(
+        paths,
+        branches,
+        tree_name,
+        chunk_size=chunk_size,
+        progress=progress,
+        n_workers=n_workers,
+    ):
         all_parts.append(file_df)
     if all_parts:
         return pd.concat(all_parts, ignore_index=True)

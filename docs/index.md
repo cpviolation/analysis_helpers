@@ -51,6 +51,7 @@ require_root()  # Raises ImportError when ROOT is missing
 | [dalitz](api/dalitz.md) | Dalitz plot utilities |
 | [efficiency](api/efficiency.md) | Efficiency estimation |
 | [fit](api/fit.md) | RooFit-based fitting helpers |
+| [io](api/io.md) | Input-Output helpers |
 | [kinematics](api/kinematics.md) | Kinematic calculations |
 | [plotting](api/plotting.md) | Plotting utilities |
 | [root_helpers](api/root_helpers.md) | PyROOT convenience wrappers |

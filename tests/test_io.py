@@ -69,6 +69,42 @@ def test_load_df_incremental_combines_rows(monkeypatch):
     assert out.to_dict(orient="list") == {"x": [1, 2, 3], "y": [10, 20, 30]}
 
 
+def test_load_df_incremental_parallel_combines_multiple_files(monkeypatch):
+    branches = ["x", "y"]
+    tree_name = "Events"
+
+    chunks_by_path = {
+        "a.root": [pd.DataFrame({"x": [1], "y": [10]})],
+        "b.root": [pd.DataFrame({"x": [2, 3], "y": [20, 30]})],
+    }
+
+    def fake_open(path):
+        return _FakeFile(tree_name, chunks_by_path[path])
+
+    monkeypatch.setattr(io.uproot, "open", fake_open)
+
+    out = io.load_df_incremental(
+        ["a.root", "b.root"],
+        branches,
+        tree_name,
+        progress=False,
+        n_workers=2,
+    )
+
+    assert out.to_dict(orient="list") == {"x": [1, 2, 3], "y": [10, 20, 30]}
+
+
+def test_load_df_incremental_raises_for_invalid_worker_count():
+    with pytest.raises(ValueError, match="n_workers must be >= 1"):
+        _ = io.load_df_incremental(
+            [],
+            ["x"],
+            "Events",
+            progress=False,
+            n_workers=0,
+        )
+
+
 def test_cache_is_valid_false_when_input_is_newer(tmp_path):
     cache = tmp_path / "cache.parquet"
     cache.write_text("cache")
