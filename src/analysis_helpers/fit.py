@@ -1052,14 +1052,14 @@ class FitUtils:
         purity.setError(Perr)
         return purity
 
-    def fitToData(self, model, data, optList=None, outname="",
+    def fitToData(self, model, data, roofit_options=None, outname="",
                     kNLL=True, kChi=False, kMinos=False, kSilent=False ):
         """Fit the model to the data
 
         Args:
             model (RooAbsPdf): the model to fit
             data (RooDataSet): the data to fit
-            optList (RooLinkedList, optional): options for the fit. Defaults to r.RooLinkedList().
+            roofit_options (list, optional): options for the fit. Defaults to r.RooLinkedList().
             outname (str, optional): the filename where to store the fit results. Defaults to "".
             kNLL (bool, optional): whether to use the negative log-likelihood for the fit. Defaults to True.
             kChi (bool, optional): whether to use the chi-squared for the fit. Defaults to False.
@@ -1073,8 +1073,10 @@ class FitUtils:
             RooFitResult: the result of the fit
         """        
 
-        if optList is None:
-            optList = r.RooLinkedList()
+        optList = r.RooLinkedList()
+        if roofit_options is not None:
+            for opt in roofit_options:
+                optList.Add(opt)
 
         if not(kNLL or kChi): return 0
 
