@@ -90,10 +90,17 @@ Python2ROOTTypes = {
     }
 
 
-def LoadCompiledLibraries():
-    """Load Compiled libraries"""
+def LoadCompiledLibraries(libraries=None):
+    """Load C++ Compiled libraries
+
+    Args:
+        libraries (list, optional): A list of C++ compiled library paths. Defaults to None.
+    """
+    if libraries is None: 
+        return
     require_root()
-    r.gSystem.Load(f'{os.environ["D02KSHH"]}/build/{os.environ["CONDA_TOOLCHAIN_BUILD"]}/libD2KShh.so')
+    for lib in libraries:
+        r.gSystem.Load(lib)
     return
 
 

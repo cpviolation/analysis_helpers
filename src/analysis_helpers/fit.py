@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import mplhep
 mplhep.style.use('LHCb2')
 from array import array
-from .root_helpers import DefineTree, LoadCompiledLibraries, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPLText
+from .root_helpers import DefineTree, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPLText
 from .utils import get_temporary_file_name
 from .plotting import configure_plot_layout
 import copy
@@ -351,7 +351,7 @@ class FitModels:
             try:
                 r.RooThreshold
             except AttributeError:
-                LoadCompiledLibraries()
+                raise ValueError('Could not find RooThreshold, please check your ROOT version or install the necessary RooFit extensions')
             a.setVal(2) 
             a.setMin(-10)
             a.setMax(10)
@@ -367,8 +367,7 @@ class FitModels:
             try:
                 r.RooThresholdDAcp
             except AttributeError:
-            #raise ValueError('RooThresholdDAcp still to be implemented')
-                LoadCompiledLibraries()
+                raise ValueError('Could not find RooThresholdDAcp, please check your ROOT version or install the necessary RooFit extensions')
             b = WS(ws, r.RooRealVar(name+'_b','b ({})'.format(name),0.06,0,0.1))
             b.setError(0.03)
             bkg_pdf = WS(ws, r.RooThresholdDAcp(name+'_bkg','bkg ({})'.format(name),x,th,a,b))
