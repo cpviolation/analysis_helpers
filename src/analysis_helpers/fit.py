@@ -1534,6 +1534,64 @@ class FitUtils:
 
         return can
     
+    def DataHistFromNumpy(self, x_arr, observables):
+        """Build a RooDataHist from numpy data (1D or multi-dimensional).
+
+        Args:
+            x_arr (array): Input data. Supported formats:
+                - 1D array with shape (n_samples,)
+                - 2D array with shape (n_samples, n_observables)
+                - 2D array with shape (n_observables, n_samples) (auto-transposed)
+            observables (RooRealVar, RooArgSet, RooArgList, list): observables used to define binning/ranges.
+
+        Returns:
+            RooDataHist: the RooDataHist object
+        """
+        # Normalise observables to a python list first
+        if hasattr(observables, "InheritsFrom") and observables.InheritsFrom("RooAbsArg"):
+            obs_list = [observables]
+        else:
+            obs_list = [obs for obs in observables]
+
+        if len(obs_list) == 0:
+            raise ValueError("observables cannot be empty")
+
+        # Convert inputs to numpy and align shape to (n_samples, n_observables)
+        arr = np.asarray(x_arr)
+        ndim_obs = len(obs_list)
+
+        if arr.ndim == 1:
+            if ndim_obs != 1:
+                raise ValueError(f"1D input is compatible only with 1 observable, got {ndim_obs}")
+            arr = arr.reshape(-1, 1)
+        elif arr.ndim == 2:
+            if arr.shape[1] != ndim_obs:
+                # Accept common transposed layout: (n_observables, n_samples)
+                if arr.shape[0] == ndim_obs:
+                    arr = arr.T
+                else:
+                    raise ValueError(
+                        f"Input shape {arr.shape} is incompatible with {ndim_obs} observables. "
+                        "Expected (n_samples, n_observables) or (n_observables, n_samples)."
+                    )
+        else:
+            raise ValueError(f"x_arr must be 1D or 2D, got {arr.ndim}D")
+
+        # Build bins/ranges from RooRealVar definitions
+        bins = [obs.getBins() for obs in obs_list]
+        ranges = [(obs.getMin(), obs.getMax()) for obs in obs_list]
+
+        nphist, edges = np.histogramdd(arr, bins=bins, range=ranges)
+
+        # Build a RooArgSet expected by RooDataHist.from_numpy
+        obs_set = r.RooArgSet()
+        for obs in obs_list:
+            obs_set.add(obs)
+
+        hist_ranges = [(edge[0], edge[-1]) for edge in edges]
+        data = r.RooDataHist.from_numpy(nphist, obs_set, bins=bins, ranges=hist_ranges)
+        return data
+    
     def DatasetFromNumpy(self, x_arr, obs):
         """Build a RooDataSet from a numpy array
 

@@ -254,10 +254,14 @@ def TTree2Array(tree, leaves=None):
 
     Returns:
         array: The numpy array
-    """    
+    """
     require_root()
-    tree_branches = [l.GetName() for l in tree.GetListOfLeaves()] if leaves is None else leaves
-    arr = np.asarray([[ev.__getattr__(tb) for tb in tree_branches] for ev in tree ])
+    # tree_branches = [l.GetName() for l in tree.GetListOfLeaves()] if leaves is None else leaves
+    # arr = np.asarray([[ev.__getattr__(tb) for tb in tree_branches] for ev in tree ])
+    r.EnableImplicitMT()  # opzionale: multithreading
+    rdf = r.RDataFrame(tree)
+    d = rdf.AsNumpy(columns=leaves)
+    arr = np.column_stack([d[leaf] for leaf in leaves])
     return arr
 
 
