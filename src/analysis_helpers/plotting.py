@@ -333,6 +333,29 @@ def plot_hist2d(x, y, ax=None,
 def plot_dalitz(m1, m2, xlab='', ylab='', masses=[], boundary=False, 
                 weights=None, log=False, logz=False, bininfo=False, 
                 ax=None, **kwargs):
+    """Draws a Dalitz plot of a three body decay. 
+    Basically it is a 2d plotting function, but when the `masses` array is given (mother mass, mA, mB, mC), the boundary can also be shown. 
+
+    Args:
+        m1 (_type_): _description_
+        m2 (_type_): _description_
+        xlab (str, optional): _description_. Defaults to ''.
+        ylab (str, optional): _description_. Defaults to ''.
+        masses (list, optional): _description_. Defaults to [].
+        boundary (bool, optional): _description_. Defaults to False.
+        weights (_type_, optional): _description_. Defaults to None.
+        log (bool, optional): _description_. Defaults to False.
+        logz (bool, optional): _description_. Defaults to False.
+        bininfo (bool, optional): _description_. Defaults to False.
+        ax (_type_, optional): _description_. Defaults to None.
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+    """    
     # awkward to numpy if needed
     m1a = m1.to_numpy() if m1 is ak.highlevel.Array else m1
     m2a = m2.to_numpy() if m2 is ak.highlevel.Array else m2
