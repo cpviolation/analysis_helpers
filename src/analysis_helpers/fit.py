@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import mplhep
 mplhep.style.use('LHCb2')
 from array import array
-from .root_helpers import DefineTree, LoadCompiledLibraries, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPLText
+from .root_helpers import DefineTree, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPLText
 from .utils import get_temporary_file_name
 from .plotting import configure_plot_layout
 import copy
@@ -351,7 +351,7 @@ class FitModels:
             try:
                 r.RooThreshold
             except AttributeError:
-                LoadCompiledLibraries()
+                raise ValueError('Could not find RooThreshold, please check your ROOT version or install the necessary RooFit extensions')
             a.setVal(2) 
             a.setMin(-10)
             a.setMax(10)
@@ -367,8 +367,7 @@ class FitModels:
             try:
                 r.RooThresholdDAcp
             except AttributeError:
-            #raise ValueError('RooThresholdDAcp still to be implemented')
-                LoadCompiledLibraries()
+                raise ValueError('Could not find RooThresholdDAcp, please check your ROOT version or install the necessary RooFit extensions')
             b = WS(ws, r.RooRealVar(name+'_b','b ({})'.format(name),0.06,0,0.1))
             b.setError(0.03)
             bkg_pdf = WS(ws, r.RooThresholdDAcp(name+'_bkg','bkg ({})'.format(name),x,th,a,b))
@@ -1052,14 +1051,14 @@ class FitUtils:
         purity.setError(Perr)
         return purity
 
-    def fitToData(self, model, data, optList=None, outname="",
+    def fitToData(self, model, data, roofit_options=None, outname="",
                     kNLL=True, kChi=False, kMinos=False, kSilent=False ):
         """Fit the model to the data
 
         Args:
             model (RooAbsPdf): the model to fit
             data (RooDataSet): the data to fit
-            optList (RooLinkedList, optional): options for the fit. Defaults to r.RooLinkedList().
+            roofit_options (list, optional): options for the fit. Defaults to r.RooLinkedList().
             outname (str, optional): the filename where to store the fit results. Defaults to "".
             kNLL (bool, optional): whether to use the negative log-likelihood for the fit. Defaults to True.
             kChi (bool, optional): whether to use the chi-squared for the fit. Defaults to False.
@@ -1073,8 +1072,10 @@ class FitUtils:
             RooFitResult: the result of the fit
         """        
 
-        if optList is None:
-            optList = r.RooLinkedList()
+        optList = r.RooLinkedList()
+        if roofit_options is not None:
+            for opt in roofit_options:
+                optList.Add(opt)
 
         if not(kNLL or kChi): return 0
 
@@ -1531,6 +1532,64 @@ class FitUtils:
         can['extra']+=[hRes, hDist, hData, hModel, lat]
 
         return can
+    
+    def DataHistFromNumpy(self, x_arr, observables):
+        """Build a RooDataHist from numpy data (1D or multi-dimensional).
+
+        Args:
+            x_arr (array): Input data. Supported formats:
+                - 1D array with shape (n_samples,)
+                - 2D array with shape (n_samples, n_observables)
+                - 2D array with shape (n_observables, n_samples) (auto-transposed)
+            observables (RooRealVar, RooArgSet, RooArgList, list): observables used to define binning/ranges.
+
+        Returns:
+            RooDataHist: the RooDataHist object
+        """
+        # Normalise observables to a python list first
+        if hasattr(observables, "InheritsFrom") and observables.InheritsFrom("RooAbsArg"):
+            obs_list = [observables]
+        else:
+            obs_list = [obs for obs in observables]
+
+        if len(obs_list) == 0:
+            raise ValueError("observables cannot be empty")
+
+        # Convert inputs to numpy and align shape to (n_samples, n_observables)
+        arr = np.asarray(x_arr)
+        ndim_obs = len(obs_list)
+
+        if arr.ndim == 1:
+            if ndim_obs != 1:
+                raise ValueError(f"1D input is compatible only with 1 observable, got {ndim_obs}")
+            arr = arr.reshape(-1, 1)
+        elif arr.ndim == 2:
+            if arr.shape[1] != ndim_obs:
+                # Accept common transposed layout: (n_observables, n_samples)
+                if arr.shape[0] == ndim_obs:
+                    arr = arr.T
+                else:
+                    raise ValueError(
+                        f"Input shape {arr.shape} is incompatible with {ndim_obs} observables. "
+                        "Expected (n_samples, n_observables) or (n_observables, n_samples)."
+                    )
+        else:
+            raise ValueError(f"x_arr must be 1D or 2D, got {arr.ndim}D")
+
+        # Build bins/ranges from RooRealVar definitions
+        bins = [obs.getBins() for obs in obs_list]
+        ranges = [(obs.getMin(), obs.getMax()) for obs in obs_list]
+
+        nphist, edges = np.histogramdd(arr, bins=bins, range=ranges)
+
+        # Build a RooArgSet expected by RooDataHist.from_numpy
+        obs_set = r.RooArgSet()
+        for obs in obs_list:
+            obs_set.add(obs)
+
+        hist_ranges = [(edge[0], edge[-1]) for edge in edges]
+        data = r.RooDataHist.from_numpy(nphist, obs_set, bins=bins, ranges=hist_ranges)
+        return data
     
     def DatasetFromNumpy(self, x_arr, obs):
         """Build a RooDataSet from a numpy array

@@ -28,6 +28,9 @@ theme:
 
 plugins:
   - search
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -44,6 +47,10 @@ plugins:
 
 nav:
   - Home: index.md
+  - Notebooks:
+    - notebooks/index.md
+    - getting_started: notebooks/getting_started.ipynb
+    - kinematics_quickstart: notebooks/kinematics_quickstart.ipynb
   - API Reference:
     - api/index.md
     - asymmetry: api/asymmetry.md

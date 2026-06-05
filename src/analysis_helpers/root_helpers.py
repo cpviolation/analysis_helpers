@@ -90,10 +90,17 @@ Python2ROOTTypes = {
     }
 
 
-def LoadCompiledLibraries():
-    """Load Compiled libraries"""
+def LoadCompiledLibraries(libraries=None):
+    """Load C++ Compiled libraries
+
+    Args:
+        libraries (list, optional): A list of C++ compiled library paths. Defaults to None.
+    """
+    if libraries is None: 
+        return
     require_root()
-    r.gSystem.Load(f'{os.environ["D02KSHH"]}/build/{os.environ["CONDA_TOOLCHAIN_BUILD"]}/libD2KShh.so')
+    for lib in libraries:
+        r.gSystem.Load(lib)
     return
 
 
@@ -254,10 +261,14 @@ def TTree2Array(tree, leaves=None):
 
     Returns:
         array: The numpy array
-    """    
+    """
     require_root()
-    tree_branches = [l.GetName() for l in tree.GetListOfLeaves()] if leaves is None else leaves
-    arr = np.asarray([[ev.__getattr__(tb) for tb in tree_branches] for ev in tree ])
+    # tree_branches = [l.GetName() for l in tree.GetListOfLeaves()] if leaves is None else leaves
+    # arr = np.asarray([[ev.__getattr__(tb) for tb in tree_branches] for ev in tree ])
+    r.EnableImplicitMT()  # opzionale: multithreading
+    rdf = r.RDataFrame(tree)
+    d = rdf.AsNumpy(columns=leaves)
+    arr = np.column_stack([d[leaf] for leaf in leaves])
     return arr
 
 
