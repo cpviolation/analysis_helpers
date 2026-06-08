@@ -150,7 +150,7 @@ def ctau_from_tau(tau):
         float: proper time (CTAU) of the particle in millimeters
     """    
     # from ns to mm
-    return  tau * scipy.constants.c / 1e6
+    return tau * scipy.constants.c / 1e6
 
 def distance(x0,y0,z0,x1,y1,z1):
     """Calculate the distance between two points in 3D space.
