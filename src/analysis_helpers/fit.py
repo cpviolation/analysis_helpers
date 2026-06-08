@@ -1,18 +1,5 @@
-try:
-    import ROOT as r  # type: ignore[import-not-found]
-    _HAS_ROOT = True
-except ModuleNotFoundError:
-    _HAS_ROOT = False
-
-    class _MissingROOT:
-        """Proxy that raises a clear error only when ROOT-backed code is used."""
-
-        def __getattr__(self, _name):
-            raise ImportError(
-                "PyROOT is not available. Install and configure ROOT to use ROOT-dependent fit tools."
-            )
-
-    r = _MissingROOT()
+from ._root_import import import_root_with_proxy
+r, _HAS_ROOT = import_root_with_proxy()
 import math
 import re
 import os
@@ -1848,7 +1835,7 @@ class FitUtils:
         rfnd = rreg.search(line).group() if rreg.search(line) is not None else ''
         vrng = [float(x) for x in rfnd.split('L(')[1].split(')')[0].split(' - ')] if rfnd!='' else None
         attributes = {'constant': 'C' in ll[1]}
-        if '//' in ll[1]: attributes['unit'] = ll[1].split('// ')[1].replace('[','').replace(']','')
+        if '//' in ll[1]: attributes['unit'] = ll[1].split('// ', 1)[1].replace('[','').replace(']','').strip()
         if not( '+/-' in ll[1] ):
             lv = ll[1].split(' ')
             while '' in lv: lv.remove('')
@@ -2210,6 +2197,55 @@ class FitUtils:
     #     c['extra']+=graphs+[hf,lat,lz,leg]
     #     c['canvas'].Update()
     #     return c
+
+    def safe_read_roofit_vars(self, ws, primary_file, fallback_file=None):
+        """Try loading RooFit variables from one or two candidate files.
+
+        Returns the file path used on success, otherwise None.
+        """
+        candidates = [primary_file]
+        if fallback_file is not None and fallback_file != primary_file:
+            candidates.append(fallback_file)
+
+        for file_name in candidates:
+            if not os.path.exists(file_name):
+                continue
+            try:
+                ws.allVars().readFromFile(file_name)
+                return file_name
+            except Exception as exc:
+                print(f"WARNING: could not read RooFit params from {file_name}: {exc}")
+                print('Falling back to python parsing of the file, which may be less robust to changes in the format of the output.')
+                with open(file_name, 'r') as f:
+                    for line in f:
+                        v = self.decodeResLine(line)
+                        if v is not None:
+                            if ws.var(v['name']) is not None:
+                                if 'err' in v.keys():
+                                    if type(v['err'])==float:
+                                        ws.var(v['name']).setError(v['err'])
+                                    elif type(v['err'])==list and len(v['err'])==2:
+                                        ws.var(v['name']).setAsymError(v['err'][0], v['err'][1])
+                                    else:
+                                        print(f"WARNING: Unrecognized error format for variable {v['name']}: {v['err']}")
+                                        ws.var(v['name']).setError(max(v['err']))
+                                if v['range'] is None:
+                                    lo, hi = 0, 1
+                                    if 'err' in v.keys():
+                                        lo = v['val'] - 5*v['err'] if type(v['err'])==float else v['val'] - 5*max(v['err'])
+                                        hi = v['val'] + 5*v['err'] if type(v['err'])==float else v['val'] + 5*max(v['err'])
+                                    ws.var(v['name']).setRange(lo, hi)
+                                else:
+                                    ws.var(v['name']).setRange(v['range'][0], v['range'][1])
+                                ws.var(v['name']).setVal(v['val'])    
+                                ws.var(v['name']).setConstant(v['attributes']['constant'])
+                                if 'unit' in v['attributes'].keys():
+                                    ws.var(v['name']).setUnit(v['attributes']['unit'])
+                                if 'bins' in v['attributes'].keys():
+                                    ws.var(v['name']).setBins(v['attributes']['bins'])
+                            else:
+                                print(f"WARNING: Variable {v['name']} from {file_name} not found in workspace.")
+        return None
 
     def GetWorkspaceFromFile(self, ws_name, file_name):
         """Get workspace from file

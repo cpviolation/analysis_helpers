@@ -54,3 +54,26 @@ def get_matching_files(directory, pattern):
             file_path = os.path.join(root, filename)
             matching_files.append(file_path)
     return matching_files
+
+
+def remove_newlines(data):
+    """Remove newlines from a dictionary, list, or string
+
+    Args:
+        data (dict, list, str): a dictionary, list, or string to remove newlines from
+
+    Returns:
+        dict: data with newlines removed
+    """    
+    if isinstance(data, dict):
+        # Recursively go through dictionary values
+        return {key: remove_newlines(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        # Recursively go through each element of the list
+        return [remove_newlines(item) for item in data]
+    elif isinstance(data, str):
+        # Strip newlines from strings
+        return data.replace('\n', '')
+    else:
+        # Return the data unchanged if it's not a dict, list, or string
+        return data
