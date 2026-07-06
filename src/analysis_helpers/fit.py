@@ -14,6 +14,7 @@ from .root_helpers import DefineTree, ROOT2MPLLineStyle, ROOT2MPLColor, ROOT2MPL
 from .utils import get_temporary_file_name
 from .plotting import configure_plot_layout
 import copy
+from typing import Any, cast
 
 
 def WS(ws, obj, opts=None):
@@ -55,6 +56,10 @@ def WS(ws, obj, opts=None):
             if wsobj.Class() != obj.Class():
                 raise TypeError()
     return wsobj
+
+
+# snake_case alias for the legacy RooWorkspace helper
+add_to_workspace = WS
 
 
 class FitModels:
@@ -102,8 +107,7 @@ class FitModels:
         """
         x = ws.var(obsname)
         if x is None:
-            print('Please choose a valid name for the observable')
-            return None
+            raise ValueError(f'Observable {obsname} not found in workspace')
         return x
 
 
@@ -304,7 +308,7 @@ class FitModels:
         if sig_type==6:
             sig_pdf = self.JohnsonPlusGaussian(ws, name, obsname)
         if sig_pdf is None:
-            print('Cannot define the signal pdf, please choose a valid value in (0-5)')
+            raise ValueError('Cannot define the signal pdf, please choose a valid value in (0-6)')
         sig_pdf.SetName(name+'_sig')
         return sig_pdf
 
@@ -483,6 +487,19 @@ class FitModels:
             simpdf.addPdf(model_plus_b[i-1],'plus_{}'.format(i))
         return simpdf
 
+    # Non-breaking snake_case aliases for public API.
+    simple_workspace = SimpleWorkspace
+    get_observable = GetObservable
+    gaussian = Gaussian
+    two_gaussians = TwoGaussians
+    three_gaussians = ThreeGaussians
+    johnson = Johnson
+    johnson_plus_gaussian = JohnsonPlusGaussian
+    dm_signal = DmSignal
+    dm_background = DmBackground
+    dm_model = DmModel
+    dm_model_bin_flip = DmModelBinFlip
+
 
 class FitUtils:
     """
@@ -646,20 +663,21 @@ class FitUtils:
         c.cd(1)
         frame.Draw()
         if semilog: c.GetPad(1).SetLogy()
-        if type(tagLeft)==str:
+        if isinstance(tagLeft, str):
             lat.DrawLatex(xLatLeft,yLat,tagLeft)
         else:
             for i in range(len(tagLeft)):
                 lat.DrawLatex(xLatLeft,yLat*(1-float(i)/10),tagLeft[i])
         lat.SetTextAlign(33)
-        if type(tagRight)==str:
+        if isinstance(tagRight, str):
             lat.DrawLatex(xLatRight,yLat,tagRight)
         else:
             for i in range(len(tagRight)):
                 lat.DrawLatex(xLatRight,yLat*(1-float(i)/10),tagRight[i])
         c.cd(2)
         frameRes = self.getResiduals(frame,ranges)
-        frameRes['frame'].Draw()
+        frame_res = cast(Any, frameRes['frame'])
+        frame_res.Draw()
         c.Update()
         extra.append(frameRes)
 
@@ -711,7 +729,8 @@ class FitUtils:
         lat.DrawLatex(xLatRight,yLat,tagRight)
         pad.GetPad(2).cd()
         frameRes = self.getResiduals(frame,ranges)
-        frameRes['frame'].Draw()
+        frame_res = cast(Any, frameRes['frame'])
+        frame_res.Draw()
         extra.append(frameRes)
 
         return extra
@@ -763,19 +782,25 @@ class FitUtils:
         for i in range(nItems):
             frame.getObject(i).Write()
         rf.Close()
-        uprf= uproot.open(tmp_file_name)
-        his = uprf[frame.getObject(0).GetName()].to_numpy()
-        grs = []
-        for i in range(1,nItems):
-            frObj = frame.getObject(i)
-            _gr = uprf[frObj.GetName()].to_hist(his[1]).to_numpy()
-            grs.append( {
-                'x': [0.5*(_gr[1][i]+_gr[1][i+1]) for i in range(len(_gr[1])-1)],
-                'y': _gr[0],
-                'title': frObj.GetTitle(),
-                'linestyle': ROOT2MPLLineStyle(frObj.GetLineStyle()),
-                'color': ROOT2MPLColor(r.gROOT.GetColor(frObj.GetLineColor()))
-            } )
+        uprf = uproot.open(tmp_file_name)
+        try:
+            uprf_any = cast(Any, uprf)
+            his = uprf_any[frame.getObject(0).GetName()].to_numpy()
+            grs = []
+            for i in range(1,nItems):
+                frObj = frame.getObject(i)
+                _gr = uprf_any[frObj.GetName()].to_hist(his[1]).to_numpy()
+                grs.append( {
+                    'x': [0.5*(_gr[1][i]+_gr[1][i+1]) for i in range(len(_gr[1])-1)],
+                    'y': _gr[0],
+                    'title': frObj.GetTitle(),
+                    'linestyle': ROOT2MPLLineStyle(frObj.GetLineStyle()),
+                    'color': ROOT2MPLColor(r.gROOT.GetColor(frObj.GetLineColor()))
+                } )
+        finally:
+            uprf_any = cast(Any, uprf)
+            if hasattr(uprf_any, 'close'):
+                uprf_any.close()
         # Plotting
         fig = None
         if axes is None:
@@ -783,7 +808,11 @@ class FitUtils:
             fig = plt.figure()
             gs = fig.add_gridspec(ncols=1,nrows=2,height_ratios=[1, 3],hspace=None)
             # Create the axes and impose the sharing of the x axis
-            (ax1, ax2) = gs.subplots(sharex='col')
+            axs = gs.subplots(sharex='col')
+            if isinstance(axs, np.ndarray):
+                ax1, ax2 = axs.tolist()
+            else:
+                raise TypeError('Expected two matplotlib axes from GridSpec.subplots')
         else:
             ax1, ax2 = axes
         # plot the histogram of the data
@@ -857,11 +886,11 @@ class FitUtils:
             boxes.update( { var+'_border': r.TBox(0.1, 1./n*(0.1+args['Index']), 0.28, 1./n*(0.9+args['Index'])) } )
             boxes.update( { var: r.TBox(0.105, 1./n*(0.1+args['Index'])+0.01, 0.275, 1./n*(0.9+args['Index'])-0.01) } )
             boxes[var+'_border'].SetFillColor(r.kBlack)
-            if 'FillColor' in args.keys() is not None: boxes[var].SetFillColor(args['FillColor'])
-            if 'LineColor' in args.keys() is not None: boxes[var].SetLineColor(args['LineColor'])
-            if 'FillStyle' in args.keys() is not None: boxes[var].SetFillStyle(args['FillStyle'])
-            if 'LineStyle' in args.keys() is not None: boxes[var].SetLineStyle(args['LineStyle'])
-            if 'DrawOption' in args.keys() is not None: boxes[var].SetDrawOption(args['DrawOption'])
+            if 'FillColor' in args: boxes[var].SetFillColor(args['FillColor'])
+            if 'LineColor' in args: boxes[var].SetLineColor(args['LineColor'])
+            if 'FillStyle' in args: boxes[var].SetFillStyle(args['FillStyle'])
+            if 'LineStyle' in args: boxes[var].SetLineStyle(args['LineStyle'])
+            if 'DrawOption' in args: boxes[var].SetDrawOption(args['DrawOption'])
             boxes[var+'_border'].Draw()
             boxes[var].Draw()
             t.DrawLatexNDC(0.3, 1./n*(0.5+args['Index']), args['Latex'] if 'Latex' in args.keys() else var)
@@ -961,7 +990,7 @@ class FitUtils:
         Nevs = {}
         Nevs['total'] = {'Full': {'val': data.sumEntries(), 'err': math.sqrt(data.sumEntries())},
                          'Signal': {'val': integrals['total']['Signal'].getVal()/integrals['total']['Full'].getVal()*data.sumEntries(),
-                                    'err': integrals['total']['Signal'].getVal()/integrals['total']['Full'].getVal()*sqrt(data.sumEntries())} }
+                                    'err': integrals['total']['Signal'].getVal()/integrals['total']['Full'].getVal()*math.sqrt(data.sumEntries())} }
         for pdf in pdfNames:
           pname = pdf['name']
           Nevs[pname] = {'Full': {'val': nevVars[pname].getVal(),
@@ -1059,10 +1088,10 @@ class FitUtils:
             RooFitResult: the result of the fit
         """        
 
-        optList = r.RooLinkedList()
+        fit_opts = []
         if roofit_options is not None:
             for opt in roofit_options:
-                optList.Add(opt)
+                fit_opts.append(opt)
 
         if not(kNLL or kChi): return 0
 
@@ -1078,26 +1107,26 @@ class FitUtils:
 
             # Minimization
             # Set error type
-            optList.Add(r.RooFit.Save())
+            fit_opts.append(r.RooFit.Save())
             if kSilent:
                 print('Running fit in "Silent" mode')
                 r.RooMsgService.instance().setGlobalKillBelow(r.RooFit.ERROR)
-                optList.Add(r.RooFit.PrintLevel(-1))
+                fit_opts.append(r.RooFit.PrintLevel(-1))
             
-            res = model.chi2FitTo(data,optList) if kChi else model.fitTo(data,optList)
+            res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
 
             # Check the status of the fit and perform again if needed
             covQual = res.covQual()
             fitStatus = res.status()
             nFit=1
             while (fitStatus or covQual!=3) and nFit<20:
-                res = model.chi2FitTo(data,optList) if kChi else model.fitTo(data,optList)
+                res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
                 covQual = res.covQual()
                 fitStatus = res.status()
                 nFit = nFit+1
 
             # run the fit one more time to check stability
-            res = model.chi2FitTo(data,optList) if kChi else model.fitTo(data,optList)
+            res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
             covQual = res.covQual()
             fitStatus = res.status()
             nFit = nFit+1
@@ -1105,7 +1134,7 @@ class FitUtils:
             # Keep searching if fit not stable
             if (fitStatus or covQual!=3):
                 while (fitStatus or covQual!=3) and nFit<20:
-                    res = model.chi2FitTo(data,optList) if kChi else model.fitTo(data,optList)
+                    res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
                     covQual = res.covQual()
                     fitStatus = res.status()
                     nFit = nFit+1
@@ -1113,8 +1142,8 @@ class FitUtils:
 
             # Run MINOS if required
             if fitStatus == 0 and covQual==3 and kMinos:
-                optList.Add(r.RooFit.Minos(True))
-                res = model.chi2FitTo(data,optList) if kChi else model.fitTo(data,optList)
+                fit_opts.append(r.RooFit.Minos(True))
+                res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
             
             # Stop the timer
             timer.Stop()
@@ -1150,10 +1179,6 @@ class FitUtils:
             # Always reset RooMsgService and clear optList if needed
             if kSilent: 
                 r.RooMsgService.instance().reset()
-            
-            # Clear the options list to prevent memory accumulation
-            if optList:
-                optList.Clear()
 
     def Migrad(self, minuit):
         """Run migrad on the given minuit object
@@ -1297,13 +1322,12 @@ class FitUtils:
             fname (str): the file name
             res (r.RooFitResult): the fit results object
         """
-        f = open(fname,'a')
-        f.write("#-- Fit Info --#\n")
-        #f.write("Iterations: "+str(nFit)+"\n")
-        f.write("Fit Status: "+str(res.status())+"\n")
-        f.write("CovQuality: "+str(res.covQual())+" (3 is Good)\n")
-        f.write(f"EDM: {res.edm():.2e}\n")
-        f.close()
+        with open(fname, 'a') as f:
+            f.write("#-- Fit Info --#\n")
+            #f.write("Iterations: "+str(nFit)+"\n")
+            f.write("Fit Status: "+str(res.status())+"\n")
+            f.write("CovQuality: "+str(res.covQual())+" (3 is Good)\n")
+            f.write(f"EDM: {res.edm():.2e}\n")
         return
 
     def fitToDataAlt(self, model, data, outname="",
@@ -1338,7 +1362,7 @@ class FitUtils:
 
         res = r.RooFitResult()
         timer = r.TStopwatch()
-        optionsList = None
+        fit_opts = None
 
         if constraints is None:
             constraints = r.RooArgSet()
@@ -1360,44 +1384,43 @@ class FitUtils:
                 print('Running fit in "Silent" mode')
                 r.RooMsgService.instance().setGlobalKillBelow(r.RooFit.ERROR)
 
-            # Set error type and build options list
-            optionsList = r.RooLinkedList()
-            if kWeighted: optionsList.Add(r.RooFit.AsymptoticError(True) if kAsymptotic else r.RooFit.SumW2Error(kWeighted))
-            optionsList.Add(r.RooFit.Extended(kExtended))
-            optionsList.Add(r.RooFit.NumCPU(nthreads))
-            optionsList.Add(r.RooFit.Constrain(constraints))
-            optionsList.Add(r.RooFit.Save())
-            if range is not None: optionsList.Add(r.RooFit.Range(range))
-            if kSilent: optionsList.Add(r.RooFit.PrintLevel(-1))
+            # Set error type and build options list as RooCmdArg sequence
+            fit_opts = []
+            if kWeighted: fit_opts.append(r.RooFit.AsymptoticError(True) if kAsymptotic else r.RooFit.SumW2Error(kWeighted))
+            fit_opts.append(r.RooFit.Extended(kExtended))
+            fit_opts.append(r.RooFit.NumCPU(nthreads))
+            fit_opts.append(r.RooFit.Constrain(constraints))
+            fit_opts.append(r.RooFit.Save())
+            if range is not None: fit_opts.append(r.RooFit.Range(range))
+            if kSilent: fit_opts.append(r.RooFit.PrintLevel(-1))
             
-            if not kSilent: optionsList.Print("V")
-            res = model.chi2FitTo(data,optionsList) if kChi else model.fitTo(data,optionsList)
+            res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
 
             # Check the status of the fit and perform again if needed
             fitStatus = res.status()
             nFit=1
             while fitStatus and nFit<20:
-                res = model.chi2FitTo(data,optionsList) if kChi else model.fitTo(data,optionsList)
+                res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
                 fitStatus = res.status()
                 nFit = nFit+1
 
             # run the fit one more time to check stability
-            res = model.chi2FitTo(data,optionsList) if kChi else model.fitTo(data,optionsList)
+            res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
             fitStatus = res.status()
             nFit = nFit+1
 
             # Keep searching if fit not stable
             if fitStatus:
                 while fitStatus and nFit<20:
-                    res = model.chi2FitTo(data,optionsList) if kChi else model.fitTo(data,optionsList)
+                    res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
                     fitStatus = res.status()
                     nFit = nFit+1
             # Then we stop searching...
 
             # Run MINOS if required
             if fitStatus == 0 and kMinos:
-                optionsList.Add(r.RooFit.Minos(True))
-                res = model.chi2FitTo(data,optionsList) if kChi else model.fitTo(data,optionsList)
+                fit_opts.append(r.RooFit.Minos(True))
+                res = model.chi2FitTo(data, *fit_opts) if kChi else model.fitTo(data, *fit_opts)
             
             # Stop the timer
             timer.Stop()
@@ -1432,13 +1455,9 @@ class FitUtils:
             # Always reset RooMsgService and clear optionsList if needed
             if kSilent: 
                 r.RooMsgService.instance().reset()
-            
-            # Clear the options list to prevent memory accumulation
-            if optionsList:
-                optionsList.Clear()
     
 
-    def PlotResiduals2D(self, model, data, obsNames=[], cname='2Dresiduals', title='residuals2D', tagLeft = '', tagRight = '', xbins=50, ybins=50):
+    def PlotResiduals2D(self, model, data, obsNames=None, cname='2Dresiduals', title='residuals2D', tagLeft = '', tagRight = '', xbins=50, ybins=50):
         """Plot the fit residuals in a 2D histogram
 
         Args:
@@ -1456,6 +1475,8 @@ class FitUtils:
             dict(canvas, extra): a canvas and a list of extra objects to be added to the canvas
         """
         # Check the number of variables
+        if obsNames is None:
+            obsNames = []
         if len(obsNames)!=2:
             print('Could not plot 2D residuals. The number of projection variables is not 2', obsNames)
             return 0
@@ -1683,7 +1704,7 @@ class FitUtils:
                       "\t  "+"{:12s}".format("%12.4e" % res.floatParsFinal().at(i).getVal()) )
 
             if res.floatParsFinal().at(i).hasAsymError():
-              out.write(+"{:21s}".format("+%8.2e, -%8.2e" % (res.floatParsFinal().at(i).getAsymErrorHi(), -1*res.floatParsFinal().at(i).getAsymErrorLo())))
+                            out.write("{:21s}".format("+%8.2e, -%8.2e" % (res.floatParsFinal().at(i).getAsymErrorHi(), -1*res.floatParsFinal().at(i).getAsymErrorLo())))
             else:
               err = res.floatParsFinal().at(i).getError()
               out.write( ("        " if doAsymErr else "")+" +/- "+"{:9s}".format("%9.2e" % err))
@@ -1832,9 +1853,10 @@ class FitUtils:
         vname = ll[0].replace(' ','')
         # variable range
         rreg = re.compile(r'L\((.*?)\)')#(r'L\([+-]?([0-9]*[.])?[0-9]+\\s+-\s+[+-]?([0-9]*[.])?[0-9]+\)')
-        rfnd = rreg.search(line).group() if rreg.search(line) is not None else ''
+        rmatch = rreg.search(line)
+        rfnd = rmatch.group() if rmatch is not None else ''
         vrng = [float(x) for x in rfnd.split('L(')[1].split(')')[0].split(' - ')] if rfnd!='' else None
-        attributes = {'constant': 'C' in ll[1]}
+        attributes: dict[str, Any] = {'constant': 'C' in ll[1]}
         if '//' in ll[1]: attributes['unit'] = ll[1].split('// ', 1)[1].replace('[','').replace(']','').strip()
         if not( '+/-' in ll[1] ):
             lv = ll[1].split(' ')
@@ -1848,7 +1870,8 @@ class FitUtils:
             lv = ll[1].split('+/-')
             value = float(lv[0])
             areg = re.compile(r'\([+-]?([0-9]*[.])?[0-9]+\,\s+[+-]?([0-9]*[.])?[0-9]+\)')
-            afnd = areg.search(lv[1]).group() if areg.search(lv[1]) is not None else ''
+            amatch = areg.search(lv[1])
+            afnd = amatch.group() if amatch is not None else ''
             if len(afnd): # asymmetric errors
                 errs = [float(x) for x in afnd.replace('(','').replace(')','').split(',')]
                 return {'name': vname, 'val': value, 'err': errs, 'attributes': attributes, 'range': vrng}
@@ -1869,27 +1892,27 @@ class FitUtils:
             (dict): A dictionary in the format `{'variables':{}, 'status':{}, 'constants':{}, 'observables':{}, 'blind': None}`
         """
         res_dict= {'variables':{}, 'status':{}, 'constants':{}, 'observables':{}, 'blind': None}
-        f = open( resfile, 'r')
-        for line in f:
-            if 'Fit Info' in line: continue
-            ldec = self.decodeResLine(line)
-            if ldec is None:
-                if ':' in line:
-                    ll = line.split(':')
-                    sname = ll[0].replace(' ','')
-                    value = ll[1].split()[0]
-                    if sname == 'BlindStr': res_dict['blind']=value
-                    else: res_dict['status'].update({sname : value})
-                continue
-            else:
-                if 'bins' in ldec['attributes'].keys():
-                    res_dict['observables'].update({ldec['name']: ldec})
-                elif 'err' not in ldec.keys() and not ldec['attributes']['constant']:
-                    res_dict['observables'].update({ldec['name']: ldec})
-                elif ldec['attributes']['constant']:
-                    res_dict['constants'].update({ldec['name']: ldec})
+        with open(resfile, 'r') as f:
+            for line in f:
+                if 'Fit Info' in line: continue
+                ldec = self.decodeResLine(line)
+                if ldec is None:
+                    if ':' in line:
+                        ll = line.split(':')
+                        sname = ll[0].replace(' ','')
+                        value = ll[1].split()[0]
+                        if sname == 'BlindStr': res_dict['blind']=value
+                        else: res_dict['status'].update({sname : value})
+                    continue
                 else:
-                    res_dict['variables'].update({ldec['name']: ldec})
+                    if 'bins' in ldec['attributes'].keys():
+                        res_dict['observables'].update({ldec['name']: ldec})
+                    elif 'err' not in ldec.keys() and not ldec['attributes']['constant']:
+                        res_dict['observables'].update({ldec['name']: ldec})
+                    elif ldec['attributes']['constant']:
+                        res_dict['constants'].update({ldec['name']: ldec})
+                    else:
+                        res_dict['variables'].update({ldec['name']: ldec})
         return res_dict
 
     def check_variable(self, vinfo, z=2., verbose=False):
@@ -1991,7 +2014,7 @@ class FitUtils:
         if verbose: print('testing',resfile)
         rd = self.resultsToDictionary(resfile)
         is_good = self.testVariables(rd)
-        is_good*= self.IsGoodFit(resfile,verbose)
+        is_good = is_good and self.IsGoodFit(resfile,verbose)
         if (not is_good) and verbose: print('problem in',resfile)
         return is_good
 
@@ -2222,9 +2245,9 @@ class FitUtils:
                         if v is not None:
                             if ws.var(v['name']) is not None:
                                 if 'err' in v.keys():
-                                    if type(v['err'])==float:
+                                    if isinstance(v['err'], (int, float)):
                                         ws.var(v['name']).setError(v['err'])
-                                    elif type(v['err'])==list and len(v['err'])==2:
+                                    elif isinstance(v['err'], list) and len(v['err'])==2:
                                         ws.var(v['name']).setAsymError(v['err'][0], v['err'][1])
                                     else:
                                         print(f"WARNING: Unrecognized error format for variable {v['name']}: {v['err']}")
@@ -2232,8 +2255,14 @@ class FitUtils:
                                 if v['range'] is None:
                                     lo, hi = 0, 1
                                     if 'err' in v.keys():
-                                        lo = v['val'] - 5*v['err'] if type(v['err'])==float else v['val'] - 5*max(v['err'])
-                                        hi = v['val'] + 5*v['err'] if type(v['err'])==float else v['val'] + 5*max(v['err'])
+                                        if isinstance(v['err'], (int, float)):
+                                            err_scale = float(v['err'])
+                                        elif isinstance(v['err'], list) and len(v['err']) > 0:
+                                            err_scale = max(v['err'])
+                                        else:
+                                            err_scale = 0.0
+                                        lo = v['val'] - 5 * err_scale
+                                        hi = v['val'] + 5 * err_scale
                                     ws.var(v['name']).setRange(lo, hi)
                                 else:
                                     ws.var(v['name']).setRange(v['range'][0], v['range'][1])
@@ -2258,18 +2287,52 @@ class FitUtils:
             (RooWorkspace): the RooWorkspace
         """
         return r.TFile(file_name).Get(ws_name)
+
+    # Non-breaking snake_case aliases for public API.
+    get_residuals = getResiduals
+    plot_fit_and_residuals = plotFitAndResiduals
+    plot_fit_and_residuals_pad = plotFitAndResidualsPad
+    plot_fit_and_residuals_mpl = plotFitAndResidualsMPL
+    get_legend = getLegend
+    get_integrals_and_events = getIntegralsAndEvents
+    get_integral = getIntegral
+    get_integrals_and_events_bis = getIntegralsAndEventsBis
+    get_significance = getSignificance
+    get_purity = getPurity
+    fit_to_data = fitToData
+    migrad = Migrad
+    fit = Fit
+    add_fit_info = AddFitInfo
+    fit_to_data_alt = fitToDataAlt
+    plot_residuals_2d = PlotResiduals2D
+    data_hist_from_numpy = DataHistFromNumpy
+    dataset_from_numpy = DatasetFromNumpy
+    combine_datasets = CombineDatasets
+    save_fit_results = SaveFitResults
+    fix_variables = FixVariables
+    get_vars_list = GetVarsList
+    get_vars_set = GetVarsSet
+    set_vars_print_digits = SetVarsPrintDigits
+    decode_res_line = decodeResLine
+    results_to_dictionary = resultsToDictionary
+    test_variable = testVariable
+    test_variables = testVariables
+    is_good_fit = IsGoodFit
+    search_for_fit_problems = searchForFitProblems
+    get_graph_variables = GetGraphVariables
+    get_workspace_from_file = GetWorkspaceFromFile
     
 
 class FitAnalyser:
     """A class to analyse fit results
     """
-    def __init__(self, fit_results_files=[], fit_utils=None):
-        self.results = fit_results_files
+    def __init__(self, fit_results_files=None, fit_utils=None):
+        self.results = [] if fit_results_files is None else fit_results_files
         self.fu = fit_utils if fit_utils is not None else FitUtils()
         self.df = self.fit_results_to_dataframe()
         return
     
-    def fit_results_to_dataframe(self, fit_results_files=[]):
+    def fit_results_to_dataframe(self, fit_results_files=None):
         """Convert fit results to a pandas dataframe
 
         Args:
@@ -2278,7 +2341,7 @@ class FitAnalyser:
         Returns:
             (pandas.DataFrame): a dataframe with the fit results
         """
-        if len(fit_results_files)==0:
+        if fit_results_files is None or len(fit_results_files)==0:
             fit_results_files = self.results
         records = []
         for file_path in fit_results_files:

@@ -16,6 +16,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "awkward" },
+    { name = "hist" },
     { name = "ipykernel" },
     { name = "ipython" },
     { name = "matplotlib" },
@@ -46,6 +47,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "awkward", specifier = ">=2.0" },
+    { name = "hist", specifier = ">=2.10.1" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "ipython", specifier = ">=9.13.0" },
     { name = "matplotlib", specifier = ">=3.10.9" },
@@ -212,6 +214,83 @@ wheels = [
 [package.optional-dependencies]
 css = [
     { name = "tinycss2" },
+]
+
+[[package]]
+name = "boost-histogram"
+version = "1.7.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/23/6f15693933ff45b40ddb47f06cfde0a5780f21488196660b745aa29e1d6c/boost_histogram-1.7.2.tar.gz", hash = "sha256:18c5e80e1867114a871adb3515bb9f94d5da2938c4d46171e3a03d7eb136e3be", size = 1229729, upload-time = "2026-04-11T02:20:36.822Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/d0/68673700a503870ab978d34696d94b4abcf6f6e49a1006fab6dce53a68c2/boost_histogram-1.7.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:129960e76578919e4b5d571bacebd3edf3166f0f7b369f987e57785159c1f1f7", size = 1147047, upload-time = "2026-04-11T02:18:49.332Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/dc/82ec17367b0f29a1b9d294bf380822f9e46c2a233309104c7ce3ea7c21c6/boost_histogram-1.7.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:704aa29ffa16549882030dc3b95da561bea07cc5f22f1d5f9f33c9650c1a69ff", size = 1016236, upload-time = "2026-04-11T02:18:50.918Z" },
+    { url = "https://files.pythonhosted.org/packages/42/9b/f3b406f814813d8c90cc2188b74296281e48a6bf35565a10ab9fc1427a2b/boost_histogram-1.7.2-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:2734e5558ddefedf434d2e463a0cddb82c17a8b2931731a180b7e6acede19bd4", size = 1048376, upload-time = "2026-04-11T02:18:52.373Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/6c/cc7ae69d7533ae2cd666244a85075f4cfc97241beb6e6de883d38cd2b0b1/boost_histogram-1.7.2-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:daaa21655f356da7d1ae41bc48bcb37c4d5182e85532e65382b0e16afc2f63f4", size = 1220663, upload-time = "2026-04-11T02:18:53.867Z" },
+    { url = "https://files.pythonhosted.org/packages/05/71/db11e208b1c1c44dd7bb5fde5123697cc44498f288b6509ed58ab47bb59d/boost_histogram-1.7.2-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:43d5e41f33ed36f7b0a6f32fd43ecfc8fe6a4c96ff7d5ad56b992f5df41915d9", size = 2109474, upload-time = "2026-04-11T02:18:55.67Z" },
+    { url = "https://files.pythonhosted.org/packages/81/a9/1ad7db67c9ef61d96e1ee506f284258f449240c719245f3c78cf15c86d25/boost_histogram-1.7.2-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:224552cd07362927f6ea71df3da11212716782b795484754a01f729d9c0618ac", size = 2330144, upload-time = "2026-04-11T02:18:57.393Z" },
+    { url = "https://files.pythonhosted.org/packages/10/4e/2acd0f075142913f452ae3d54a42370946c5a7292c16b1f0728330568ad5/boost_histogram-1.7.2-cp311-cp311-win32.whl", hash = "sha256:bf6d536e93f728354e50903a9aebd4dc30d2522d81544ae2a351baa229ee6e0b", size = 647513, upload-time = "2026-04-11T02:18:59.18Z" },
+    { url = "https://files.pythonhosted.org/packages/86/17/438e1e870c5d52ecfd27b5beeaebeb1172c6c7fd3db272c832c9167fd362/boost_histogram-1.7.2-cp311-cp311-win_amd64.whl", hash = "sha256:5dc63b8fbb0c2f09e0bda1cc30a91b8102da305866b81bf262b896d8da33d956", size = 877561, upload-time = "2026-04-11T02:19:00.851Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/74/cd3536fa9b812fd929b38947a186f1cf3cf6877772a191dcfb530c514891/boost_histogram-1.7.2-cp311-cp311-win_arm64.whl", hash = "sha256:70dfc87ff8c94e391d8ecc16fd53f99ade469420eb6b9d686aca4bcd2a3b25ae", size = 822391, upload-time = "2026-04-11T02:19:02.585Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/f9/2e5ce18d0ef9b2503e73b864e9fed7fd733c1577a854244cf09f9ef57394/boost_histogram-1.7.2-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:e1d558b9e4cd1898c5c0e6ced0a305b6032f8dd4c158e9c61f8a327845a8a48d", size = 1169395, upload-time = "2026-04-11T02:19:03.94Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/79/767352866e7690a862c8ac5b0e67b9c83d3a80f37a627a2111798966ae38/boost_histogram-1.7.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:93fa937ca8dbc6a357046a9fdf6eb097c85170816021cfeb8fee254652555b9a", size = 1021680, upload-time = "2026-04-11T02:19:05.643Z" },
+    { url = "https://files.pythonhosted.org/packages/22/49/41d198b6b50843dc8b18a7c9b181ddd2f43ecd0214f3d18faf098f922379/boost_histogram-1.7.2-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ce10a8fe6a1074cd6b13275e68e530e44a7313d1a03ca8f535e72fff7c4c1034", size = 1045501, upload-time = "2026-04-11T02:19:07.174Z" },
+    { url = "https://files.pythonhosted.org/packages/87/4d/ddb77cb97a4e23012c315b53444e77a1c791d42b2255b9f4cdffd0c6ef11/boost_histogram-1.7.2-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:79b7d6f7c4b68d35b647456703c417f4241cccf49b650f900f329da0dd956484", size = 1226218, upload-time = "2026-04-11T02:19:08.63Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/23/deadd9d48f428f5d9cce84f5bccb1198f950a317086be74dd34261905ed8/boost_histogram-1.7.2-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:918677f2caf8b16625cddd3dc74be479acf1a8b366bf3e70518de9b4ff25f6c3", size = 2109282, upload-time = "2026-04-11T02:19:10.13Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/3b/c356c34733ddcf5534fb91b23e93f3105953f13f7329451b6598986a8879/boost_histogram-1.7.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:98da235c04bfa47fb864fe42f63cb233632fb05e31539def8ef471f3c4c21f2d", size = 2340936, upload-time = "2026-04-11T02:19:11.964Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/37/7ecd3318137e9912bab2bde8629356e420f2678c59c6e7fc15613fdfddf7/boost_histogram-1.7.2-cp312-cp312-win32.whl", hash = "sha256:22ffdffafdee6c4ecfc4de532aa570f74d16c6ce6da9d49332b589ca6247c218", size = 650898, upload-time = "2026-04-11T02:19:13.406Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/9f/eb6c87acdb7eb9e6d1386f670c27b928eee9d19ef89ea34bb620d7f22e2c/boost_histogram-1.7.2-cp312-cp312-win_amd64.whl", hash = "sha256:87acd8a37f8cfa57d6e8dc354c9ffca930916f9dbab4d5d2672f972baea6c7d5", size = 890681, upload-time = "2026-04-11T02:19:15.193Z" },
+    { url = "https://files.pythonhosted.org/packages/81/37/235adaf7bb2d118f5cd5d73c480b20d15b305dd0b59d32010d3f919c4f2e/boost_histogram-1.7.2-cp312-cp312-win_arm64.whl", hash = "sha256:235d0f9829c6d001229fe02a3c4d2f8c4feb6cb9153d7e4176cca4e5911f1e86", size = 826944, upload-time = "2026-04-11T02:19:16.928Z" },
+    { url = "https://files.pythonhosted.org/packages/78/ab/780366a67c1b7721bccfa5affdcd5c99d46193f40f25cab68cf13c8c8716/boost_histogram-1.7.2-cp313-cp313-ios_13_0_arm64_iphoneos.whl", hash = "sha256:9cd2b57c93e76ad672de9d7f35bef76ad43a3f5ef5894765f6d6c496b22ec5a9", size = 990912, upload-time = "2026-04-11T02:19:18.825Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/8e/0050d52f1ff1687c2e057f66e68982ed0e5bc518824621866b34d1fe8610/boost_histogram-1.7.2-cp313-cp313-ios_13_0_arm64_iphonesimulator.whl", hash = "sha256:1a52d97fa2eeb761a65e4cdc44dac4fb641ac31785bd95d2b6d564075cfb4cbc", size = 1019989, upload-time = "2026-04-11T02:19:20.528Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/ee/78b359e393d29a97332d123f0288b79748ba8b4588d3d48f8edfc0aa731b/boost_histogram-1.7.2-cp313-cp313-ios_13_0_x86_64_iphonesimulator.whl", hash = "sha256:5e8ebda302156f95fbbcc0144c29715ca1048a46410fbf2a2fd47d335f8c72d1", size = 1171132, upload-time = "2026-04-11T02:19:21.928Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/e3/b206ef920fb86c69e8263f193a598ef8d246f01642cb07ac856dcf202b7b/boost_histogram-1.7.2-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:527a10465d1a07e7944baa04721b3aefee3f3985a7c186bef53be99d573d09f9", size = 1169368, upload-time = "2026-04-11T02:19:23.352Z" },
+    { url = "https://files.pythonhosted.org/packages/99/4b/210e7077d037ba0c199620f02e0ba955df0228a94603403af9e0d3a99a94/boost_histogram-1.7.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:bb513e96bcdd47981ad2f27dac7b9edb7b480448ac535bf618c644a62ff5471f", size = 1021825, upload-time = "2026-04-11T02:19:25.11Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/c4/4be2fef3c456f9b6e2d3fd9b14a77f5d848ffea755ce133c1ece6360112d/boost_histogram-1.7.2-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:adcbc1a921798f81009c2427f1a4f06aa65453d4858edb781a0e61350bc214d0", size = 1045519, upload-time = "2026-04-11T02:19:26.795Z" },
+    { url = "https://files.pythonhosted.org/packages/60/0a/771ea36b71c14c5f74c2d7af5115bfe6e7d49fb29b5631a7a25371ab0305/boost_histogram-1.7.2-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:732be426e1a57daa094273f9b38fb3a6af7a03ca9bdc981e74b2e69ad8c0ec91", size = 1226262, upload-time = "2026-04-11T02:19:28.17Z" },
+    { url = "https://files.pythonhosted.org/packages/20/0c/605704cde0a241bae5ac602ca504f53708d8b4e8247515576d27beb0cbae/boost_histogram-1.7.2-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:1ed21bc579951fd0351337e71f8d40eff370ad76afecd2e546bff39703692c04", size = 2109638, upload-time = "2026-04-11T02:19:29.522Z" },
+    { url = "https://files.pythonhosted.org/packages/88/8a/16e11f25ace21e12a1d102e3f827984f45f9c0e5d43a0fce3d01c75b5cab/boost_histogram-1.7.2-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:6a84c3e0501a3adf4fb2e844132517ce8ee95c5d40a9c190f7d7e518e3893ce6", size = 2340908, upload-time = "2026-04-11T02:19:31.015Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/63/a4fb6ea29f0308f26ef226a9b249f5c2bd6e10d0579a9238017581d9dea0/boost_histogram-1.7.2-cp313-cp313-win32.whl", hash = "sha256:d362b77b63dd219da8d62b81754665924d0db81ea26943960eef154772311c93", size = 651657, upload-time = "2026-04-11T02:19:32.478Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/37/f19c0a860bf95910c8a8233311e633fb087bead45a29de19cce2f2a2f777/boost_histogram-1.7.2-cp313-cp313-win_amd64.whl", hash = "sha256:3a092758a2004161ffee70dcb7d956372fe57bee15f8469e57f93f11342342e3", size = 890427, upload-time = "2026-04-11T02:19:33.971Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/c2/285e1402d151a769c96449fb315f48e8c16e0467d95c3d2e752435c68272/boost_histogram-1.7.2-cp313-cp313-win_arm64.whl", hash = "sha256:4444bc95db3ff56c2824f269416358580a36a51d4823607680dcb159433283ca", size = 827002, upload-time = "2026-04-11T02:19:35.669Z" },
+    { url = "https://files.pythonhosted.org/packages/03/7a/30e529a595a37d37f4a35ec7faf920f691e44ecfdcfb76b0959f656f27a2/boost_histogram-1.7.2-cp314-cp314-ios_13_0_arm64_iphoneos.whl", hash = "sha256:7fa89bd142fef171beb80006440cf820663f2b8c6dfd773e77ed1d5ac422cd49", size = 995641, upload-time = "2026-04-11T02:19:37.457Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/3d/0356fb2721398bcba6a452b3dff7187566760929ae796488a92e8c35d597/boost_histogram-1.7.2-cp314-cp314-ios_13_0_arm64_iphonesimulator.whl", hash = "sha256:66781ac74254aa8c015226ce91f3a3dd6a1de4e2ec14537e6dd460c802b166a2", size = 1023985, upload-time = "2026-04-11T02:19:39.011Z" },
+    { url = "https://files.pythonhosted.org/packages/83/74/48d6c211c4bd30a69a78110b98a1af7d28fb9bb6cc50c2bcd9040a6b1f31/boost_histogram-1.7.2-cp314-cp314-ios_13_0_x86_64_iphonesimulator.whl", hash = "sha256:a4d87f249d00e471e665516d69ee9ad9b4e9c74dd5105e5db6987bc686a32d59", size = 1168974, upload-time = "2026-04-11T02:19:40.412Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/df/bf75ad975c4aef6c19ff5ae5ef11c2b0fc0e6beba0f5ecdd09755cc12a0c/boost_histogram-1.7.2-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:19082066c5b397b59a4be5fa4ad6ee5759060f789f3ca8ab66540e83856d0a2f", size = 1168293, upload-time = "2026-04-11T02:19:42.127Z" },
+    { url = "https://files.pythonhosted.org/packages/70/33/ee740e45182cec41e3ad579d62d6eabfaa6f36b600b33df1914657552ad5/boost_histogram-1.7.2-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:ff08cc00905b9723f56d3b63c8324fc9472f68354f1c5160148013f0734e1b10", size = 1025749, upload-time = "2026-04-11T02:19:43.87Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/50/2c6079714931e435d3272c82cd2c15ae693579f19336d9a117fa1a80b955/boost_histogram-1.7.2-cp314-cp314-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:0ff369961de33889d02b05b8cddb8fb2aab96f47a78df30cd0c0603d4f8c7918", size = 1051900, upload-time = "2026-04-11T02:19:45.512Z" },
+    { url = "https://files.pythonhosted.org/packages/42/62/3077f44630982bcab26988a9471d9ed8724dae316ea69f6bb9b77d7ca1c5/boost_histogram-1.7.2-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:2fe147c8499a968428763647697873d3cb27b5c0b8db9558d4496e966f7fe381", size = 1226849, upload-time = "2026-04-11T02:19:47.435Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/65/7229f58aedb16b875ec8e639f3c5cb0c5ef03d4b44b450f4d91b12d384a0/boost_histogram-1.7.2-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:c32c9f6d860630d56430340c42103d7fc48087466ecb2b67c48b9701cdddd9ef", size = 2114752, upload-time = "2026-04-11T02:19:48.856Z" },
+    { url = "https://files.pythonhosted.org/packages/18/74/a7500459fff27c4238ad3b0149ced43ce607c46f89ef6ca2810b9dc5666d/boost_histogram-1.7.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:ed2dbd76730a9b4f6d806d0415806b5c9343d0c3bf2a769ed021e6e10105f26c", size = 2341002, upload-time = "2026-04-11T02:19:50.621Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/24/93451efc8ece73170914282d4d382bdb9be650a6841b032463ae2c58e4bb/boost_histogram-1.7.2-cp314-cp314-win32.whl", hash = "sha256:cbc9b48d94950a464c9d5059071286a48fc4c2cd88ee511ccee3bea4b0cc89c5", size = 660539, upload-time = "2026-04-11T02:19:52.158Z" },
+    { url = "https://files.pythonhosted.org/packages/38/fe/6834bb7572fdb9701b93f533cdda7f7c80d7c8543ca5522755bd04e2c1eb/boost_histogram-1.7.2-cp314-cp314-win_amd64.whl", hash = "sha256:0fda25726ffee7c6ac42f2c919d5dbefcc2355e097a5682775750723706eb22d", size = 919921, upload-time = "2026-04-11T02:19:53.896Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/10/3d0eabb7722ecdca1bef482c3aae2f2a161ed9a39ade4381037ff1622778/boost_histogram-1.7.2-cp314-cp314-win_arm64.whl", hash = "sha256:188390d53cad612aa9a4f0f9ce4d5f77811935e32984d365e33e3542414735e4", size = 846976, upload-time = "2026-04-11T02:19:55.596Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/73/374201786b3a5173cf78b6338149083de6e195b724ecd29fab49ec708388/boost_histogram-1.7.2-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:6e2823b49685758d9c9f7f3860d0767983d75ee8157c2f5c09e3b49844fbfd4b", size = 1240862, upload-time = "2026-04-11T02:19:57.051Z" },
+    { url = "https://files.pythonhosted.org/packages/96/ae/e7f36138cb4ee9c87885d086ba38e348be067e13886b9c4c284d522c8383/boost_histogram-1.7.2-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:da7c2084714d6c728dad8ed78f51939761c80bded479e50f46604c86487bdff8", size = 1099711, upload-time = "2026-04-11T02:19:58.756Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/dc/f5a7be40966f5404dd9032a15763666fe5a84dc98baa52dd275f6ccd5e43/boost_histogram-1.7.2-cp314-cp314t-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d2d7b13544086d0bd3dbe0e9b19b927cc45be1e90f417bde96e1bfd8457b0a44", size = 1059270, upload-time = "2026-04-11T02:20:00.458Z" },
+    { url = "https://files.pythonhosted.org/packages/73/14/de387265f5259a529bd374560cb7f45136a56c4b63abb4785578710c9f43/boost_histogram-1.7.2-cp314-cp314t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b37bfd289021e0b87cc376d60ea195d84c9fe065cb6116b088f9e6efd39c150e", size = 1244470, upload-time = "2026-04-11T02:20:02.265Z" },
+    { url = "https://files.pythonhosted.org/packages/68/0e/90cd4d634a795e461a337c2bc9f87cb9a8eb0fa9c6a534d9143ce4b67c75/boost_histogram-1.7.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:37b51861c271c47c83549155276bbb44d803580c25a0f092c65ddd27adefe674", size = 2127265, upload-time = "2026-04-11T02:20:03.722Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/b5/1d82d95737b5b779de6dc990f54c0ab4494763c040a7ac99be064399298b/boost_histogram-1.7.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:31638f9c80c6abe5f07b4628d56499494a625644db88dc113f98f71a9aaed6e4", size = 2353793, upload-time = "2026-04-11T02:20:05.688Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/1b/488e2799cae19af10a9d2ee1877027f96c09b4f4861decd062c8f34cf4f2/boost_histogram-1.7.2-cp314-cp314t-win32.whl", hash = "sha256:3d211e959dc8700047623b1a3b158875cb0185f9eca92d9741fec6fb234bfc9c", size = 727433, upload-time = "2026-04-11T02:20:07.407Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/79/2140592e625db7b66a58ec45c7e7fd77696c057d952814d356691063a945/boost_histogram-1.7.2-cp314-cp314t-win_amd64.whl", hash = "sha256:75a80b9ccbbb580fed93ebab37f10cf478a07265d3a3d080af62ddcbd9ecdabd", size = 1045699, upload-time = "2026-04-11T02:20:08.748Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/88/767315179cc620278fece6a4031fca09a1b49281246717e6288505a34afb/boost_histogram-1.7.2-cp314-cp314t-win_arm64.whl", hash = "sha256:49a67aeb475ff9f69bd9fe7427832645c0a277e3c63bcaebf0324f55f4dbec79", size = 892538, upload-time = "2026-04-11T02:20:10.136Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/2e/43898a1f7ad67bb7e7edacd0ca1511f3a8cfc5ed95e140974a8fd35832f9/boost_histogram-1.7.2-graalpy311-graalpy242_311_native-macosx_10_9_x86_64.whl", hash = "sha256:6d96243fdf4f768468bf7e2e74d3b3d7f358e89a04071977285afaa5f17f8d19", size = 1179899, upload-time = "2026-04-11T02:20:11.749Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/5d/868da2234edb46e3d07d0d046268b2f1b1a9a2ddb9f0b6b1b90aff5a368c/boost_histogram-1.7.2-graalpy311-graalpy242_311_native-macosx_11_0_arm64.whl", hash = "sha256:0c3406405d735fdc71f813305ad2a27aa03e9e757f125223dcc123fd5216e0d5", size = 1039333, upload-time = "2026-04-11T02:20:13.523Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/ed/849cf585dabd9fb0171b85bb9effa758e495f812b7c4e24cfbddbc059cd0/boost_histogram-1.7.2-graalpy311-graalpy242_311_native-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6e16ace7dddd4684d06d80175d1e047a0e621f84d0e340b52038537f675a9141", size = 1089234, upload-time = "2026-04-11T02:20:15.101Z" },
+    { url = "https://files.pythonhosted.org/packages/21/29/5ad843361c10ff5da9d6e1974d004d498e5896921474ab1b79fb9b9ba20b/boost_histogram-1.7.2-graalpy311-graalpy242_311_native-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e67b8990e9b4127eca6eea4b10ee294ce68e9dc0909b0f24ff499ead7458247d", size = 1285242, upload-time = "2026-04-11T02:20:16.635Z" },
+    { url = "https://files.pythonhosted.org/packages/43/7f/2762c146871940a5adf51ef382e3ab093e1c27713b1b5a672cfbfb41aa06/boost_histogram-1.7.2-graalpy311-graalpy242_311_native-win_amd64.whl", hash = "sha256:4db022e9ba1a344535c72803c2ed255422487aa1004521804c6ea40c183549f2", size = 886001, upload-time = "2026-04-11T02:20:18.035Z" },
+    { url = "https://files.pythonhosted.org/packages/30/99/c970d76bd7ce4e6a09203261e194f5447837a14f5b5a9ad8c2abcd415261/boost_histogram-1.7.2-graalpy312-graalpy250_312_native-macosx_10_13_x86_64.whl", hash = "sha256:d935132522706117ac74f807e6c2f831ff1c5fd56ed64504b3e9002fe590af67", size = 1230205, upload-time = "2026-04-11T02:20:19.497Z" },
+    { url = "https://files.pythonhosted.org/packages/be/20/b5341e4f90d0bcff09ba881812f7ea462d5def6432103a31e39e181ede31/boost_histogram-1.7.2-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl", hash = "sha256:fcfcb7888ad29955b2491e6447ff6a0dbee59c1af099dc77f3d40b38d618a6c5", size = 1095870, upload-time = "2026-04-11T02:20:21.036Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/5d/0c1637446393814cdf694c8b92f6b533d85ac13a54dd5df2a7fc2ae4f4db/boost_histogram-1.7.2-graalpy312-graalpy250_312_native-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:efbc6a975b7df4baa80d6edb7a216ab76c5908d6ce6ec60774205a3a2787ba6b", size = 1079234, upload-time = "2026-04-11T02:20:22.76Z" },
+    { url = "https://files.pythonhosted.org/packages/90/29/ea6d1d66a9f9ece395803359ec8d7ad116a0cec89ddb87205f54b813d145/boost_histogram-1.7.2-graalpy312-graalpy250_312_native-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e16b842582b90d910eeaff334fceacb8b70481b15c21bc5f131a4e82873d8ead", size = 1268307, upload-time = "2026-04-11T02:20:24.178Z" },
+    { url = "https://files.pythonhosted.org/packages/75/9c/c1c61ccccbb1866c11be53b7c9ce37dbf8cf6bed3f5666940e6e4142fbbb/boost_histogram-1.7.2-graalpy312-graalpy250_312_native-win_amd64.whl", hash = "sha256:14d8f127576de9c2677b9803f9949f523812d894917c75d9725de61c30ec36d7", size = 957400, upload-time = "2026-04-11T02:20:26.05Z" },
+    { url = "https://files.pythonhosted.org/packages/15/ef/b8d1caed295d8e73b46e3729ce94932ca2dfe2c6d7aabef93b7ab777aa42/boost_histogram-1.7.2-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:0bbc1b1e334b7a6b58de75a8cce2019f0034a2f1fd0613fcba0e12939b02118b", size = 1151257, upload-time = "2026-04-11T02:20:27.833Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/7a/e5c19dcb11a96975630f4b441f7c16cb40695bfe46c20a053f56edf3b063/boost_histogram-1.7.2-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:3ffce3ba934a7ae008e840e69cf72ec58c152604a58717df16d3128959a44034", size = 1024342, upload-time = "2026-04-11T02:20:29.592Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/fe/033c858484c395943087f08c271341a4a812eb263691c947ce2550f72be5/boost_histogram-1.7.2-pp311-pypy311_pp73-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:d105db8ce5f8ebb3e3ad70e5e26d96d189f755efdf46724ffe359f06aa6f2dad", size = 1050813, upload-time = "2026-04-11T02:20:31.371Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/c7/c19b4cd85a32df3572bc3b2e2884e0aeffa6021c16802254f83508c1b61b/boost_histogram-1.7.2-pp311-pypy311_pp73-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:24cc0cd52f6dd53f7db20497d14fc107c085045db6ab0fb00410bbda98440f53", size = 1222817, upload-time = "2026-04-11T02:20:33.593Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/f4/0b41ba697920caac8c241518a99b7ca0832c477eb0740440171496988d50/boost_histogram-1.7.2-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:8abc07a868801f655013cf09522bc87cd8d661436928d92208ec1e5388d8c842", size = 877931, upload-time = "2026-04-11T02:20:35.368Z" },
 ]
 
 [[package]]
@@ -834,6 +913,35 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9d/82/74f4a3310cdabfbb10da554c3a672847f1ed33c6f61dd472681ce7f1fe67/griffelib-2.0.2.tar.gz", hash = "sha256:3cf20b3bc470e83763ffbf236e0076b1211bac1bc67de13daf494640f2de707e", size = 166461, upload-time = "2026-03-27T11:34:51.091Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/11/8c/c9138d881c79aa0ea9ed83cbd58d5ca75624378b38cee225dcf5c42cc91f/griffelib-2.0.2-py3-none-any.whl", hash = "sha256:925c857658fb1ba40c0772c37acbc2ab650bd794d9c1b9726922e36ea4117ea1", size = 142357, upload-time = "2026-03-27T11:34:46.275Z" },
+]
+
+[[package]]
+name = "hist"
+version = "2.10.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "boost-histogram" },
+    { name = "histoprint" },
+    { name = "numpy" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ea/19/675006ed34998073e851f837c129172fb93115e056b54382f4f8b1c6392e/hist-2.10.1.tar.gz", hash = "sha256:dec8e6ac79a6d64ec8873cf36b3ef0394c79aff3b0e8abed71fdc77fdc421b2e", size = 1002417, upload-time = "2026-02-05T16:44:05.406Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/d5/406972d1ffcab016331a3198d8981b46d7685be19535998e35929080d921/hist-2.10.1-py3-none-any.whl", hash = "sha256:890c05ab3cf9b64c474a3c84f64bc768bd8d85b1728f449d7dc210248583657e", size = 43208, upload-time = "2026-02-05T16:44:03.411Z" },
+]
+
+[[package]]
+name = "histoprint"
+version = "2.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "numpy" },
+    { name = "uhi" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/dd/ca/bebfe8f734df2e9d50b665b2d9c6024e71f5b072de8cffd2b7db173e5d48/histoprint-2.6.0.tar.gz", hash = "sha256:e1df729350455b457e97f20883537ae74522879e7c33c609df12f247cca4a21d", size = 353540, upload-time = "2024-12-20T09:47:28.354Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/5b/807583c78fe054cb63c15e77e8533fd8b1a9037a0f5eb24efaf4d5fa6fe0/histoprint-2.6.0-py3-none-any.whl", hash = "sha256:37217473865993fb1e198c6beb201d401e277e64e639e91178270d7dc8488857", size = 16367, upload-time = "2024-12-20T09:47:24.124Z" },
 ]
 
 [[package]]

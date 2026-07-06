@@ -48,3 +48,19 @@ If you want this behavior everywhere in this repo, you can define an alias:
 alias uv='./scripts/uv-root'
 ```
 
+If a notebook loading the `analysis_helpers` environment does not find `ROOT`, try running the `uv-root sync` command and restarting the kernel.
+
+## scikit-build-core note
+
+If editable builds fail with an error similar to:
+
+`Use cmake.version instead of cmake.minimum-version with scikit-build-core >= 0.8`
+
+ensure this project uses:
+
+```toml
+[tool.scikit-build.cmake]
+version = ">=3.20"
+```
+
+and not `minimum-version = "3.20"`.
