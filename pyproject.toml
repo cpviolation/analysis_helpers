@@ -11,8 +11,12 @@ dependencies = [
     "pandas>=3.0.2",
     "scipy>=1.17.1",
     "tqdm>=4.67.3",
+    "pyyaml>=6.0",
     "uproot>=5.7.4",
     "vector>=1.4",
+    "ipython>=9.13.0",
+    "ipykernel>=7.2.0",
+    "hist>=2.10.1",
 ]
 
 [project.optional-dependencies]
@@ -40,4 +44,4 @@ build-backend = "scikit_build_core.build"
 wheel.packages = ["src/analysis_helpers"]
 
 [tool.scikit-build.cmake]
-minimum-version = "3.20"
+version = ">=3.20"
