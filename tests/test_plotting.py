@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from analysis_helpers.plotting import (
-    adaptive_bin_edges,
     create_subplots,
     plot_2darray,
     plot_hist,
@@ -45,16 +44,6 @@ def test_plot_hist2d_sets_axis_labels():
     assert ax.get_ylabel() == "y"
     assert len(fig.axes) == 2
     fig.clf()
-
-
-def test_adaptive_bin_edges_respects_requested_range():
-    data = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
-
-    edges = adaptive_bin_edges(data, bins=4, range=(1.0, 3.0))
-
-    assert edges[0] == pytest.approx(1.0)
-    assert edges[-1] == pytest.approx(3.0)
-    assert np.all(np.diff(edges) >= 0)
 
 
 def test_create_subplots_hides_unused_axes():

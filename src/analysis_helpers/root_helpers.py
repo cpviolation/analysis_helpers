@@ -1,11 +1,15 @@
 import os
-from ._root_import import import_root_with_proxy, is_root_available as _is_root_available, require_root as _require_root
+from ._root_import import import_root_with_proxy as _import_root_with_proxy, is_root_available as _is_root_available, require_root as _require_root
 
-r, _HAS_ROOT = import_root_with_proxy()
+r, _HAS_ROOT = _import_root_with_proxy()
 from array import array
 import pandas as pd
 import numpy as np
 import uproot
+
+def import_root_with_proxy():
+    """Import ROOT with a proxy to avoid issues with ROOT's global state."""
+    return _import_root_with_proxy()
 
 
 def is_root_available():

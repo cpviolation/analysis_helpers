@@ -1,6 +1,7 @@
 import awkward as ak
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 import mplhep
 import math
@@ -509,21 +510,6 @@ def plot_signal_and_backgrond_distributions(data, variable, metric_variable,
     return fig, ax
 
 
-def adaptive_bin_edges(a, **kwargs):
-    npa = a.to_numpy() if type(a) == ak.highlevel.Array else a
-    xmin = np.min(npa)
-    xmax = np.max(npa)    
-    if 'range' in kwargs:
-        xmin, xmax = kwargs['range']
-    bin_edges = [xmin]
-    x_bins = kwargs.get('bins', 10)
-    for i in range(x_bins - 1):
-        mask = np.logical_and(xmin <= npa, npa <= xmax)
-        bin_edges.append(np.quantile(npa[mask], (i + 1) / x_bins))
-    bin_edges.append(xmax)
-    return bin_edges
-
-
 def plot_efficiency(passed, total, 
                     name=None, unit=None, 
                     ax=None, **kwargs):
@@ -890,3 +876,55 @@ def configure_plot_layout(fig, method='tight_layout'):
         )
     else:  # default: tight_layout
         plt.tight_layout(pad=1.5, h_pad=2.0, w_pad=1.5)
+
+
+def create_fit_figure_grid(nrows=4, ncols=2, figsize=(20,34)):
+    """
+    Create a figure with a grid of subplots, each containing two axes
+    suitable for plotFitAndResidualsMPL output.
+
+    Args:
+        nrows (int): Number of rows in the grid.
+        ncols (int): Number of columns in the grid.
+        figsize (tuple): Size of the figure (width, height).
+    
+    Returns:
+        fig: matplotlib figure
+        axes_pairs: list of (ax1, ax2) tuples for each subplot
+    """
+    fig = plt.figure(figsize=figsize)
+    main_gs = fig.add_gridspec(nrows, ncols, hspace=0.3, wspace=0.3, top=0.95)
+
+    axes_pairs = []
+    for row in range(nrows):
+        for col in range(ncols):
+            nested_gs = gridspec.GridSpecFromSubplotSpec(
+                2, 1, main_gs[row, col], 
+                height_ratios=[1, 3], 
+                hspace=0.1
+            )
+            ax1 = fig.add_subplot(nested_gs[0, 0])  # Residuals
+            ax2 = fig.add_subplot(nested_gs[1, 0], sharex=ax1)  # Fit
+            axes_pairs.append((ax1, ax2))
+
+    return fig, axes_pairs
+
+
+def hide_unused_axes(ax_grid, used_slots):
+    """Hide subplot slots that were not used for plotting.
+
+    Args:
+        ax_grid (array-like): 2D array of axes objects.
+        used_slots (set of tuples): Set of (row, col) indices indicating which axes were used for plotting. Unused axes will be hidden.
+
+    Returns:
+        None: The function modifies the visibility of axes in place.
+    """
+    ax_array = np.asarray(ax_grid)
+    if ax_array.ndim == 1:
+        # Keep behavior robust for single-row/single-column layouts.
+        ax_array = ax_array.reshape(1, -1)
+    for y in range(ax_array.shape[0]):
+        for x in range(ax_array.shape[1]):
+            if (y, x) not in used_slots:
+                ax_array[y, x].set_visible(False)

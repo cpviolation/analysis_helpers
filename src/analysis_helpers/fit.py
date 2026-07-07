@@ -2,6 +2,7 @@ from ._root_import import import_root_with_proxy
 r, _HAS_ROOT = import_root_with_proxy()
 import math
 import re
+import cppyy
 import os
 import numpy as np
 import pandas as pd
@@ -2216,35 +2217,34 @@ class FitUtils:
             except Exception as exc:
                 print(f"WARNING: could not read RooFit params from {file_name}: {exc}")
                 print('Falling back to python parsing of the file, which may be less robust to changes in the format of the output.')
-                with open(file_name, 'r') as f:
-                    for line in f:
-                        v = self.decodeResLine(line)
-                        if v is not None:
-                            if ws.var(v['name']) is not None:
-                                if 'err' in v.keys():
-                                    if type(v['err'])==float:
-                                        ws.var(v['name']).setError(v['err'])
-                                    elif type(v['err'])==list and len(v['err'])==2:
-                                        ws.var(v['name']).setAsymError(v['err'][0], v['err'][1])
-                                    else:
-                                        print(f"WARNING: Unrecognized error format for variable {v['name']}: {v['err']}")
-                                        ws.var(v['name']).setError(max(v['err']))
-                                if v['range'] is None:
-                                    lo, hi = 0, 1
-                                    if 'err' in v.keys():
-                                        lo = v['val'] - 5*v['err'] if type(v['err'])==float else v['val'] - 5*max(v['err'])
-                                        hi = v['val'] + 5*v['err'] if type(v['err'])==float else v['val'] + 5*max(v['err'])
-                                    ws.var(v['name']).setRange(lo, hi)
-                                else:
-                                    ws.var(v['name']).setRange(v['range'][0], v['range'][1])
-                                ws.var(v['name']).setVal(v['val'])    
-                                ws.var(v['name']).setConstant(v['attributes']['constant'])
-                                if 'unit' in v['attributes'].keys():
-                                    ws.var(v['name']).setUnit(v['attributes']['unit'])
-                                if 'bins' in v['attributes'].keys():
-                                    ws.var(v['name']).setBins(v['attributes']['bins'])
+                dres = self.resultsToDictionary(file_name)
+                for section in ('variables', 'observables'):
+                    for vname, vinfo in dres.get(section, {}).items():
+                        if ws.var(vname) == cppyy.nullptr:
+                            print(f"WARNING: Variable {vname} from {file_name} not found in workspace.")
+                            continue
+                        if 'err' in vinfo.keys():
+                            if type(vinfo['err']) == float:
+                                ws.var(vname).setError(vinfo['err'])
+                            elif type(vinfo['err']) == list and len(vinfo['err']) == 2:
+                                ws.var(vname).setAsymError(vinfo['err'][0], vinfo['err'][1])
                             else:
-                                print(f"WARNING: Variable {v['name']} from {file_name} not found in workspace.")
+                                print(f"WARNING: Unrecognized error format for variable {vname}: {vinfo['err']}")
+                                ws.var(vname).setError(max(vinfo['err']))
+                        if vinfo['range'] is None:
+                            lo, hi = 0, 1
+                            if 'err' in vinfo.keys():
+                                lo = vinfo['val'] - 5 * vinfo['err'] if type(vinfo['err']) == float else vinfo['val'] - 5 * max(vinfo['err'])
+                                hi = vinfo['val'] + 5 * vinfo['err'] if type(vinfo['err']) == float else vinfo['val'] + 5 * max(vinfo['err'])
+                                ws.var(vname).setRange(lo, hi)
+                        else:
+                            ws.var(vname).setRange(vinfo['range'][0], vinfo['range'][1])
+                        ws.var(vname).setVal(vinfo['val'])
+                        ws.var(vname).setConstant(vinfo['attributes']['constant'])
+                        if 'unit' in vinfo['attributes'].keys():
+                            ws.var(vname).setUnit(vinfo['attributes']['unit'])
+                        if 'bins' in vinfo['attributes'].keys():
+                            ws.var(vname).setBins(vinfo['attributes']['bins'])
         return None
 
     def GetWorkspaceFromFile(self, ws_name, file_name):
