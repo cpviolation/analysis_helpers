@@ -8,9 +8,30 @@ import math
 from .kinematics import estar2, estar3
 from .efficiency import get_efficiency, get_efficiency_array
 from .asymmetry import get_asymmetry_array
+from .efficiency import binomial_error
 from matplotlib.colors import LogNorm
 # mplhep.style.use("LHCb2")
 
+def histogram_with_error(data, weights=None, **kwargs):
+    """Compute histogram and error bars for a given data set.
+
+    Args:
+        data (array): the data to histogram
+        weights (array, optional): weights for the data. Defaults to None.
+        **kwargs: additional arguments for np.histogram
+
+    Returns:
+        tuple: histogram values and bin edges
+    """
+    hist = np.histogram(data, bins=kwargs.get('bins', 100), range=kwargs.get('range', None), weights=weights, density=kwargs.get('density', False))
+    if weights is not None:
+        sumw2 = np.histogram(data, bins=kwargs['bins'], range=kwargs['range'], weights=weights**2, density=kwargs.get('density', False))[0]
+        ntot = sumw2.sum()
+        yerr = binomial_error(sumw2/ntot, ntot)
+    else:
+        ntot = hist[0].sum()
+        yerr = binomial_error(hist[0]/ntot, ntot)
+    return hist, yerr
 
 def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     """Plot a histogram from an array
@@ -29,7 +50,7 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     data_np_hist = type(data) is tuple and len(data) == 2
     if data_np_hist: # np.histogram
         dataA = data[0]
-        yerr = np.sqrt(dataA) if yerr else None
+        #yerr = np.sqrt(dataA) if yerr else None
         # needs to add sumw2
     elif data is ak.highlevel.Array:
         dataA = data.to_numpy()
@@ -44,19 +65,25 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
         kwargs['bins'] = len(data[1])-1 if data_np_hist else 100 
     if 'range' not in kwargs or data_np_hist:
         kwargs['range'] = (data[1][0],data[1][-1]) if data_np_hist else (min(data), max(data))
-    if 'histtype' not in kwargs:
-        kwargs['histtype'] = 'step'
-    if 'color' not in kwargs:
-        kwargs['color'] = 'black'
-    wei = kwargs['weights'] if 'weights' in kwargs else None
-    den = kwargs['density'] if 'density' in kwargs else False
+    wei = kwargs.get('weights', None)
+    den = kwargs.get('density', False)
     # draw histogram
-    hist = np.histogram(dataA, bins=kwargs['bins'], range=kwargs['range'], weights=wei, density=den) if not data_np_hist else data
+    hist, hist_err = histogram_with_error(dataA, weights=wei, **kwargs) if not data_np_hist else (data, None)
+    #hist = np.histogram(dataA, bins=kwargs['bins'], range=kwargs['range'], weights=wei, density=den) if not data_np_hist else data
+    # if yerr:
+    #     if wei is not None:
+    #         sumw2 = np.histogram(dataA, bins=kwargs['bins'], range=kwargs['range'], weights=wei**2, density=den)[0] if not data_np_hist else np.histogram(dataA, bins=data[1], range=kwargs['range'], weights=wei**2, density=den)[0]
+    #         ntot = sumw2.sum()
+    #         yerr = binomial_error(sumw2/ntot, ntot)
+    #     else:
+    #         ntot = hist[0].sum()
+    #         yerr = binomial_error(hist[0]/ntot, ntot)
+    print(hist, hist_err)
     mplhep.histplot(
         hist,
-        yerr=yerr,
-        color=kwargs['color'],
-        histtype=kwargs['histtype'],
+        yerr=hist_err if yerr else None,
+        color=kwargs.get('color', 'black'),
+        histtype=kwargs.get('histtype', 'step'),
         alpha=kwargs.get('alpha', None),
         label=kwargs.get('label', None),
         ax=ax,
@@ -74,7 +101,7 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     return ax if fig is None else fig, ax
 
 
-def plot_hists(data_arrays, yerrs=False, name=None, unit=None, ax=None, **kwargs):
+def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs):
     """Plot two histograms on the same axis using mplhep.histplot().
 
     Args:
@@ -116,8 +143,10 @@ def plot_hists(data_arrays, yerrs=False, name=None, unit=None, ax=None, **kwargs
                           density=den) for i in range(n_arrays)]
 
     # Plot the histograms
+    yerrs = [False] * n_arrays if yerrs is None else yerrs
     for i in range(n_arrays):
-        mplhep.histplot(hists[i], yerr=yerrs, histtype=kwargs['histtype'], alpha=kwargs['alpha'],
+        hist, hist_err = histogram_with_error(dataA[i], weights=weights[i] if weights is not None else None, **kwargs)[0]
+        mplhep.histplot(hist, yerr=hist_err if yerrs[i] else None, histtype=kwargs['histtype'], alpha=kwargs['alpha'],
                         #color=kwargs['color'],
                           label=legends[i] if legends is not None else None, ax=ax)
 
