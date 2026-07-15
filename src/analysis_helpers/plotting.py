@@ -18,20 +18,58 @@ def histogram_with_error(data, weights=None, **kwargs):
     Args:
         data (array): the data to histogram
         weights (array, optional): weights for the data. Defaults to None.
-        **kwargs: additional arguments for np.histogram
+        **kwargs: additional arguments for np.histogram.
+            Supported extra key:
+            - error_model (str): 'poisson' (default) or 'binomial'.
 
     Returns:
         tuple: histogram values and bin edges
     """
-    hist = np.histogram(data, bins=kwargs.get('bins', 100), range=kwargs.get('range', None), weights=weights, density=kwargs.get('density', False))
+    bins = kwargs.get('bins', 100)
+    range_ = kwargs.get('range', None)
+    weights = kwargs.get('weights', None)
+    density = kwargs.get('density', False)
+    error_model = kwargs.get('error_model', 'poisson')
+    if error_model not in ['poisson', 'binomial']:
+        raise ValueError("error_model must be 'poisson' or 'binomial'")
+
+    # Always compute counts first and propagate their uncertainties.
+    counts, edges = np.histogram(data, bins=bins, range=range_, weights=weights, density=False)
+
     if weights is not None:
-        sumw2 = np.histogram(data, bins=kwargs['bins'], range=kwargs['range'], weights=weights**2, density=kwargs.get('density', False))[0]
-        ntot = sumw2.sum()
-        yerr = binomial_error(sumw2/ntot, ntot)
+        # Weighted uncertainty per bin: sqrt(sum w^2).
+        sumw2, _ = np.histogram(data, bins=edges, weights=np.asarray(weights) ** 2, density=False)
+        err_counts = np.sqrt(sumw2)
+        norm = float(np.sum(weights))
     else:
-        ntot = hist[0].sum()
-        yerr = binomial_error(hist[0]/ntot, ntot)
-    return hist, yerr
+        norm = float(np.sum(counts))
+        # Unweighted uncertainty model.
+        if error_model == 'binomial':
+            if norm <= 0:
+                err_counts = np.zeros_like(counts, dtype=float)
+            else:
+                # Each bin is a category of a multinomial sample.
+                # Marginally, Var(N_i)=N p_i (1-p_i).
+                probs = counts / norm
+                err_counts = binomial_error(probs, norm)
+        else:
+            # Default: Poisson approximation per bin.
+            err_counts = np.sqrt(counts)
+
+    if not density:
+        return (counts, edges), err_counts
+
+    # For density=True, scale both histogram values and uncertainties by
+    # the same normalization used for counts/(norm*bin_width).
+    bin_widths = np.diff(edges)
+    if norm == 0:
+        hist_vals = np.zeros_like(counts, dtype=float)
+        yerr = np.zeros_like(counts, dtype=float)
+    else:
+        scale = abs(norm) * bin_widths
+        hist_vals = counts / scale
+        yerr = err_counts / scale
+    return (hist_vals, edges), yerr
 
 def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     """Plot a histogram from an array
@@ -68,17 +106,7 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     wei = kwargs.get('weights', None)
     den = kwargs.get('density', False)
     # draw histogram
-    hist, hist_err = histogram_with_error(dataA, weights=wei, **kwargs) if not data_np_hist else (data, None)
-    #hist = np.histogram(dataA, bins=kwargs['bins'], range=kwargs['range'], weights=wei, density=den) if not data_np_hist else data
-    # if yerr:
-    #     if wei is not None:
-    #         sumw2 = np.histogram(dataA, bins=kwargs['bins'], range=kwargs['range'], weights=wei**2, density=den)[0] if not data_np_hist else np.histogram(dataA, bins=data[1], range=kwargs['range'], weights=wei**2, density=den)[0]
-    #         ntot = sumw2.sum()
-    #         yerr = binomial_error(sumw2/ntot, ntot)
-    #     else:
-    #         ntot = hist[0].sum()
-    #         yerr = binomial_error(hist[0]/ntot, ntot)
-    print(hist, hist_err)
+    hist, hist_err = histogram_with_error(dataA, **kwargs) if not data_np_hist else (data, None)
     mplhep.histplot(
         hist,
         yerr=hist_err if yerr else None,
@@ -133,9 +161,10 @@ def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs)
         kwargs['color'] = None
     if 'alpha' not in kwargs:
         kwargs['alpha'] = None
-    weights = kwargs['weights'] if 'weights' in kwargs else None
-    legends = kwargs['legend'] if 'legend' in kwargs else None
-    den = kwargs['density'] if 'density' in kwargs else False
+    weights = kwargs.get('weights', None)
+    kwargs.pop('weights')
+    legends = kwargs.get('legend', None)
+    den = kwargs.get('density', False)
     # Compute histograms using np.histogram
     n_arrays = len(dataA)
     hists = [np.histogram(dataA[i], bins=kwargs['bins'], range=kwargs['range'], 
@@ -145,7 +174,7 @@ def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs)
     # Plot the histograms
     yerrs = [False] * n_arrays if yerrs is None else yerrs
     for i in range(n_arrays):
-        hist, hist_err = histogram_with_error(dataA[i], weights=weights[i] if weights is not None else None, **kwargs)[0]
+        hist, hist_err = histogram_with_error(dataA[i], weights=weights[i] if weights is not None else None, **kwargs)
         mplhep.histplot(hist, yerr=hist_err if yerrs[i] else None, histtype=kwargs['histtype'], alpha=kwargs['alpha'],
                         #color=kwargs['color'],
                           label=legends[i] if legends is not None else None, ax=ax)
@@ -584,7 +613,7 @@ def plot_efficiency(passed, total,
                 linestyle='', marker='.', **kwargs)
     ax.set_ylabel('Efficiency')
     ax.set_ylim(0, 1.1)
-    ax.set_xlabel(f'{name}'+(' [{unit}]' if unit is not None else ''))
+    ax.set_xlabel(f'{name}'+(f' [{unit}]' if unit is not None else ''))
     ax.set_xlim(rng[0], rng[1])
     ax.plot( ax.get_xlim(), [1,1], 'r--')
     return fig, ax if ax is None else ax
@@ -615,10 +644,10 @@ def plot_efficiency2d(passed, total,
     # define binning scheme
     rng = kwargs.get('range', None)
     if rng is None:
-        xmin = np.min( [np.min(passed[0]), np.min(total[0])] )
-        xmax = np.max( [np.max(passed[0]), np.max(total[0])] )
-        ymin = np.min( [np.min(passed[1]), np.min(total[1])] )
-        ymax = np.max( [np.max(passed[1]), np.max(total[1])] )
+        xmin = np.min( [np.min(passed[:, 0]), np.min(total[:, 0])] )
+        xmax = np.max( [np.max(passed[:, 0]), np.max(total[:, 0])] )
+        ymin = np.min( [np.min(passed[:, 1]), np.min(total[:, 1])] )
+        ymax = np.max( [np.max(passed[:, 1]), np.max(total[:, 1])] )
         rng = ((xmin, xmax), (ymin, ymax))
     bins = kwargs.get('bins', 10)
     try: 
@@ -630,11 +659,11 @@ def plot_efficiency2d(passed, total,
     # calculate histograms
     xbin_edges = np.linspace(rng[0][0], rng[0][1], xbins+1)
     ybin_edges = np.linspace(rng[1][0], rng[1][1], ybins+1)
-    hpassed = np.histogram2d(passed[0], passed[1], bins=(xbins,ybins), range=rng, 
+    hpassed = np.histogram2d(passed[:, 0], passed[:, 1], bins=(xbins,ybins), range=rng, 
                              weights=wpassed)
-    htotal = np.histogram2d(total[0], total[1], bins=(xbins,ybins), range=rng, 
+    htotal = np.histogram2d(total[:, 0], total[:, 1], bins=(xbins,ybins), range=rng, 
                             weights=wtotal)
-    hsumw2_total = np.histogram2d(total[0], total[1], bins=(xbins,ybins), range=rng,
+    hsumw2_total = np.histogram2d(total[:, 0], total[:, 1], bins=(xbins,ybins), range=rng,
                                   weights=(wtotal**2 if wtotal is not None else None) )
     # calculate efficiency
     eff, eff_cl = get_efficiency_array(np.matrix.flatten(hpassed[0]), 
