@@ -53,6 +53,7 @@ nav:
     - kinematics_quickstart: notebooks/kinematics_quickstart.ipynb
     - dalitz_plot: notebooks/dalitz_plot.ipynb
     - fit: notebooks/fit.ipynb
+    - plots: notebooks/plots.ipynb
   - API Reference:
     - api/index.md
     - asymmetry: api/asymmetry.md
