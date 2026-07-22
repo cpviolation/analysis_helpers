@@ -116,7 +116,7 @@ def adaptive_bin_edges_3d(a, bins=None, bins_range=None, weights=None,
     np_x = to_numpy(a)[:,0]
     np_y = to_numpy(a)[:,1]
     np_z = to_numpy(a)[:,2]
-    np_sweights = to_numpy(weights)
+    np_sweights = to_numpy(weights) if weights is not None else np.ones_like(np_x)
     
     # 1. Apply range filters to evaluate signal and standard deviations
     mask_x = get_mask(np_x, bins_range[0] if bins_range is not None else None)
@@ -427,3 +427,19 @@ def get_bin_id_3d(a, binning, independent=False):
                                          j*(len(binning[2][i][j])-1) + \
                                          bin_ids_z
     return bin_ids_3d
+
+
+def get_bin_from_edges(x, bin_edges):
+    """A function that returns an array with the bin index for each candidate in the original array.
+
+    Args:
+        x (numpy.ndarray): the array with the data.
+        bin_edges (list): list of bin edges.
+    
+    Returns:
+        array: an array with the decay time bin for each candidate.
+    """
+    bin_indices = np.digitize(x, bin_edges) - 1
+    # Set candidates outside the bin edges to -1
+    bin_indices[(x < bin_edges[0]) | (x >= bin_edges[-1])] = -1
+    return bin_indices

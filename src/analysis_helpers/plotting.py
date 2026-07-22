@@ -12,6 +12,14 @@ from .efficiency import binomial_error
 from matplotlib.colors import LogNorm
 # mplhep.style.use("LHCb2")
 
+
+def _format_bin_size(value, precision=12):
+    """Return a compact decimal string for bin width labels.
+
+    Avoid exposing floating-point artifacts such as 0.052000000000000005.
+    """
+    return f"{value:.{precision}f}".rstrip('0').rstrip('.')
+
 def histogram_with_error(data, weights=None, **kwargs):
     """Compute histogram and error bars for a given data set.
 
@@ -103,8 +111,6 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
         kwargs['bins'] = len(data[1])-1 if data_np_hist else 100 
     if 'range' not in kwargs or data_np_hist:
         kwargs['range'] = (data[1][0],data[1][-1]) if data_np_hist else (min(data), max(data))
-    wei = kwargs.get('weights', None)
-    den = kwargs.get('density', False)
     # draw histogram
     hist, hist_err = histogram_with_error(dataA, **kwargs) if not data_np_hist else (data, None)
     mplhep.histplot(
@@ -118,12 +124,13 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     )
     # add labels
     bin_size = (kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins']
+    bin_size_label = _format_bin_size(bin_size)
     if unit is not None:
         ax.set_xlabel(f'{name} [{unit}]')
-        ax.set_ylabel(f'Events / ({bin_size} {unit})')
+        ax.set_ylabel(f'Events / ({bin_size_label} {unit})')
     else:
         ax.set_xlabel(f'{name}')
-        ax.set_ylabel(f'Events / ({bin_size})')
+        ax.set_ylabel(f'Events / ({bin_size_label})')
     # set x axis limits
     ax.set_xlim(kwargs['range'][0],kwargs['range'][1])
     return ax if fig is None else fig, ax
@@ -161,6 +168,8 @@ def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs)
         kwargs['color'] = None
     if 'alpha' not in kwargs:
         kwargs['alpha'] = None
+    if 'weights' not in kwargs:
+        kwargs['weights'] = None
     weights = kwargs.get('weights', None)
     kwargs.pop('weights')
     legends = kwargs.get('legend', None)
@@ -180,14 +189,15 @@ def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs)
                           label=legends[i] if legends is not None else None, ax=ax)
 
     # Add labels
-    bin_size = round((kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins'], 3)
+    bin_size = (kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins']
+    bin_size_label = _format_bin_size(bin_size)
     #print(kwargs['range'][1], kwargs['range'][0], kwargs['bins'], bin_size)
     if unit is not None:
         ax.set_xlabel(f'{name} [{unit}]')
-        ax.set_ylabel(f'Events / ({bin_size} {unit})')
+        ax.set_ylabel(f'Events / ({bin_size_label} {unit})')
     else:
         ax.set_xlabel(f'{name}')
-        ax.set_ylabel(f'Events / ({bin_size})')
+        ax.set_ylabel(f'Events / ({bin_size_label})')
 
     # Set x axis limits
     ax.set_xlim(kwargs['range'][0], kwargs['range'][1])
@@ -252,12 +262,13 @@ def plot_double_hist(data1, data2, yerr1=False, yerr2=False, name=None, unit=Non
 
     # Add labels
     bin_size = (kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins']
+    bin_size_label = _format_bin_size(bin_size)
     if unit is not None:
         ax.set_xlabel(f'{name} [{unit}]')
-        ax.set_ylabel(f'Events / ({bin_size} {unit})')
+        ax.set_ylabel(f'Events / ({bin_size_label} {unit})')
     else:
         ax.set_xlabel(f'{name}')
-        ax.set_ylabel(f'Events / ({bin_size})')
+        ax.set_ylabel(f'Events / ({bin_size_label})')
 
     # Set x axis limits
     ax.set_xlim(kwargs['range'][0], kwargs['range'][1])
