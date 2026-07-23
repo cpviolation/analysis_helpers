@@ -154,7 +154,8 @@ def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs)
     fig = None
     if ax is None:
         fig, ax = plt.subplots()
-
+    else:
+        fig = ax.get_figure()
     # Set default values for kwargs
     if 'bins' not in kwargs:
         kwargs['bins'] = 100
@@ -915,6 +916,42 @@ def plot_2darray(data, xbins=None, ybins=None, zrange=None,
             ax.axvline(x=x, color='k', linestyle='--', linewidth=1)
         for y in ybins:
             ax.axhline(y=y, color='k', linestyle='--', linewidth=1)
+    try:
+        fig.tight_layout()
+        return fig, ax
+    except Exception as e:
+        print(f"Warning: tight_layout() failed due to: {e}")
+        return ax
+
+
+def plot_graph(x, y, xerr=None, yerr=None, xlabel='', ylabel='', title='', ax=None, **kwargs):
+    """Plots a graph with x and y values
+
+    Args:
+        x (array): x values
+        y (array): y values
+        xerr (array, optional): x error values. Defaults to None.
+        yerr (array, optional): y error values. Defaults to None.
+        xlabel (str, optional): x axis label. Defaults to ''.
+        ylabel (str, optional): y axis label. Defaults to ''.
+        title (str, optional): plot title. Defaults to ''.
+        ax (axis, optional): the axis where to make the plot. Defaults to None.
+
+    Returns:
+        fig, ax: figure and axes
+    """
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
+    if xerr is not None or yerr is not None:
+        ax.errorbar(x, y, xerr=xerr, yerr=yerr, **kwargs)
+    else:
+        ax.plot(x, y, **kwargs)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
     try:
         fig.tight_layout()
         return fig, ax
