@@ -20,7 +20,7 @@ def test_plot_hist_sets_labels_and_limits():
     fig, ax = plot_hist(data, name="mass", unit="GeV", bins=4, range=(0.0, 4.0))
 
     assert ax.get_xlabel() == "mass [GeV]"
-    assert ax.get_ylabel() == "Events / (1.0 GeV)"
+    assert ax.get_ylabel() == "Events / (1 GeV)"
     assert ax.get_xlim() == pytest.approx((0.0, 4.0))
     fig.clf()
 
