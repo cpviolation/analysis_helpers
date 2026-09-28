@@ -2,7 +2,6 @@ from ._root_import import import_root_with_proxy
 r, _HAS_ROOT = import_root_with_proxy()
 import math
 import re
-import cppyy
 import os
 import numpy as np
 import pandas as pd
@@ -2241,6 +2240,8 @@ class FitUtils:
                 print(f"WARNING: could not read RooFit params from {file_name}: {exc}")
                 print('Falling back to python parsing of the file, which may be less robust to changes in the format of the output.')
                 dres = self.resultsToDictionary(file_name)
+                import cppyy
+
                 for section in ('variables', 'observables'):
                     for vname, vinfo in dres.get(section, {}).items():
                         if ws.var(vname) == cppyy.nullptr:
