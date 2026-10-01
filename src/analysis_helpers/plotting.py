@@ -35,7 +35,7 @@ def histogram_with_error(data, weights=None, **kwargs):
     """
     bins = kwargs.get('bins', 100)
     range_ = kwargs.get('range', None)
-    weights = kwargs.get('weights', None)
+    weights = kwargs.get('weights', weights)
     density = kwargs.get('density', False)
     error_model = kwargs.get('error_model', 'poisson')
     if error_model not in ['poisson', 'binomial']:
