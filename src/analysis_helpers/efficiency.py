@@ -122,7 +122,7 @@ def binomial_error(p, n):
     Returns:
         float: binomial error
     """
-    return np.sqrt(p * (1 - p) / n)
+    return np.sqrt(p * (1 - p) * n)
 
 
 def get_efficiency(passed, total, bin_edges,

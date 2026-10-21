@@ -1,15 +1,83 @@
 import awkward as ak
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 import mplhep
 import math
 from .kinematics import estar2, estar3
 from .efficiency import get_efficiency, get_efficiency_array
 from .asymmetry import get_asymmetry_array
+from .efficiency import binomial_error
 from matplotlib.colors import LogNorm
 # mplhep.style.use("LHCb2")
 
+
+def _format_bin_size(value, precision=12):
+    """Return a compact decimal string for bin width labels.
+
+    Avoid exposing floating-point artifacts such as 0.052000000000000005.
+    """
+    return f"{value:.{precision}f}".rstrip('0').rstrip('.')
+
+def histogram_with_error(data, weights=None, **kwargs):
+    """Compute histogram and error bars for a given data set.
+
+    Args:
+        data (array): the data to histogram
+        weights (array, optional): weights for the data. Defaults to None.
+        **kwargs: additional arguments for np.histogram.
+            Supported extra key:
+            - error_model (str): 'poisson' (default) or 'binomial'.
+
+    Returns:
+        tuple: histogram values and bin edges
+    """
+    bins = kwargs.get('bins', 100)
+    range_ = kwargs.get('range', None)
+    weights = kwargs.get('weights', weights)
+    density = kwargs.get('density', False)
+    error_model = kwargs.get('error_model', 'poisson')
+    if error_model not in ['poisson', 'binomial']:
+        raise ValueError("error_model must be 'poisson' or 'binomial'")
+
+    # Always compute counts first and propagate their uncertainties.
+    counts, edges = np.histogram(data, bins=bins, range=range_, weights=weights, density=False)
+
+    if weights is not None:
+        # Weighted uncertainty per bin: sqrt(sum w^2).
+        sumw2, _ = np.histogram(data, bins=edges, weights=np.asarray(weights) ** 2, density=False)
+        err_counts = np.sqrt(sumw2)
+        norm = float(np.sum(weights))
+    else:
+        norm = float(np.sum(counts))
+        # Unweighted uncertainty model.
+        if error_model == 'binomial':
+            if norm <= 0:
+                err_counts = np.zeros_like(counts, dtype=float)
+            else:
+                # Each bin is a category of a multinomial sample.
+                # Marginally, Var(N_i)=N p_i (1-p_i).
+                probs = counts / norm
+                err_counts = binomial_error(probs, norm)
+        else:
+            # Default: Poisson approximation per bin.
+            err_counts = np.sqrt(counts)
+
+    if not density:
+        return (counts, edges), err_counts
+
+    # For density=True, scale both histogram values and uncertainties by
+    # the same normalization used for counts/(norm*bin_width).
+    bin_widths = np.diff(edges)
+    if norm == 0:
+        hist_vals = np.zeros_like(counts, dtype=float)
+        yerr = np.zeros_like(counts, dtype=float)
+    else:
+        scale = abs(norm) * bin_widths
+        hist_vals = counts / scale
+        yerr = err_counts / scale
+    return (hist_vals, edges), yerr
 
 def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     """Plot a histogram from an array
@@ -28,7 +96,7 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
     data_np_hist = type(data) is tuple and len(data) == 2
     if data_np_hist: # np.histogram
         dataA = data[0]
-        yerr = np.sqrt(dataA) if yerr else None
+        #yerr = np.sqrt(dataA) if yerr else None
         # needs to add sumw2
     elif data is ak.highlevel.Array:
         dataA = data.to_numpy()
@@ -43,37 +111,32 @@ def plot_hist(data, yerr=False, name=None, unit=None, ax=None, **kwargs):
         kwargs['bins'] = len(data[1])-1 if data_np_hist else 100 
     if 'range' not in kwargs or data_np_hist:
         kwargs['range'] = (data[1][0],data[1][-1]) if data_np_hist else (min(data), max(data))
-    if 'histtype' not in kwargs:
-        kwargs['histtype'] = 'step'
-    if 'color' not in kwargs:
-        kwargs['color'] = 'black'
-    wei = kwargs['weights'] if 'weights' in kwargs else None
-    den = kwargs['density'] if 'density' in kwargs else False
     # draw histogram
-    hist = np.histogram(dataA, bins=kwargs['bins'], range=kwargs['range'], weights=wei, density=den) if not data_np_hist else data
+    hist, hist_err = histogram_with_error(dataA, **kwargs) if not data_np_hist else (data, None)
     mplhep.histplot(
         hist,
-        yerr=yerr,
-        color=kwargs['color'],
-        histtype=kwargs['histtype'],
+        yerr=hist_err if yerr else None,
+        color=kwargs.get('color', 'black'),
+        histtype=kwargs.get('histtype', 'step'),
         alpha=kwargs.get('alpha', None),
         label=kwargs.get('label', None),
         ax=ax,
     )
     # add labels
     bin_size = (kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins']
+    bin_size_label = _format_bin_size(bin_size)
     if unit is not None:
         ax.set_xlabel(f'{name} [{unit}]')
-        ax.set_ylabel(f'Events / ({bin_size} {unit})')
+        ax.set_ylabel(f'Events / ({bin_size_label} {unit})')
     else:
         ax.set_xlabel(f'{name}')
-        ax.set_ylabel(f'Events / ({bin_size})')
+        ax.set_ylabel(f'Events / ({bin_size_label})')
     # set x axis limits
     ax.set_xlim(kwargs['range'][0],kwargs['range'][1])
     return ax if fig is None else fig, ax
 
 
-def plot_hists(data_arrays, yerrs=False, name=None, unit=None, ax=None, **kwargs):
+def plot_hists(data_arrays, yerrs=None, name=None, unit=None, ax=None, **kwargs):
     """Plot two histograms on the same axis using mplhep.histplot().
 
     Args:
@@ -91,7 +154,8 @@ def plot_hists(data_arrays, yerrs=False, name=None, unit=None, ax=None, **kwargs
     fig = None
     if ax is None:
         fig, ax = plt.subplots()
-
+    else:
+        fig = ax.get_figure()
     # Set default values for kwargs
     if 'bins' not in kwargs:
         kwargs['bins'] = 100
@@ -105,9 +169,12 @@ def plot_hists(data_arrays, yerrs=False, name=None, unit=None, ax=None, **kwargs
         kwargs['color'] = None
     if 'alpha' not in kwargs:
         kwargs['alpha'] = None
-    weights = kwargs['weights'] if 'weights' in kwargs else None
-    legends = kwargs['legend'] if 'legend' in kwargs else None
-    den = kwargs['density'] if 'density' in kwargs else False
+    if 'weights' not in kwargs:
+        kwargs['weights'] = None
+    weights = kwargs.get('weights', None)
+    kwargs.pop('weights')
+    legends = kwargs.get('legend', None)
+    den = kwargs.get('density', False)
     # Compute histograms using np.histogram
     n_arrays = len(dataA)
     hists = [np.histogram(dataA[i], bins=kwargs['bins'], range=kwargs['range'], 
@@ -115,20 +182,23 @@ def plot_hists(data_arrays, yerrs=False, name=None, unit=None, ax=None, **kwargs
                           density=den) for i in range(n_arrays)]
 
     # Plot the histograms
+    yerrs = [False] * n_arrays if yerrs is None else yerrs
     for i in range(n_arrays):
-        mplhep.histplot(hists[i], yerr=yerrs, histtype=kwargs['histtype'], alpha=kwargs['alpha'],
+        hist, hist_err = histogram_with_error(dataA[i], weights=weights[i] if weights is not None else None, **kwargs)
+        mplhep.histplot(hist, yerr=hist_err if yerrs[i] else None, histtype=kwargs['histtype'], alpha=kwargs['alpha'],
                         #color=kwargs['color'],
                           label=legends[i] if legends is not None else None, ax=ax)
 
     # Add labels
-    bin_size = round((kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins'], 3)
+    bin_size = (kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins']
+    bin_size_label = _format_bin_size(bin_size)
     #print(kwargs['range'][1], kwargs['range'][0], kwargs['bins'], bin_size)
     if unit is not None:
         ax.set_xlabel(f'{name} [{unit}]')
-        ax.set_ylabel(f'Events / ({bin_size} {unit})')
+        ax.set_ylabel(f'Events / ({bin_size_label} {unit})')
     else:
         ax.set_xlabel(f'{name}')
-        ax.set_ylabel(f'Events / ({bin_size})')
+        ax.set_ylabel(f'Events / ({bin_size_label})')
 
     # Set x axis limits
     ax.set_xlim(kwargs['range'][0], kwargs['range'][1])
@@ -193,12 +263,13 @@ def plot_double_hist(data1, data2, yerr1=False, yerr2=False, name=None, unit=Non
 
     # Add labels
     bin_size = (kwargs['range'][1] - kwargs['range'][0]) / kwargs['bins']
+    bin_size_label = _format_bin_size(bin_size)
     if unit is not None:
         ax.set_xlabel(f'{name} [{unit}]')
-        ax.set_ylabel(f'Events / ({bin_size} {unit})')
+        ax.set_ylabel(f'Events / ({bin_size_label} {unit})')
     else:
         ax.set_xlabel(f'{name}')
-        ax.set_ylabel(f'Events / ({bin_size})')
+        ax.set_ylabel(f'Events / ({bin_size_label})')
 
     # Set x axis limits
     ax.set_xlim(kwargs['range'][0], kwargs['range'][1])
@@ -333,6 +404,29 @@ def plot_hist2d(x, y, ax=None,
 def plot_dalitz(m1, m2, xlab='', ylab='', masses=[], boundary=False, 
                 weights=None, log=False, logz=False, bininfo=False, 
                 ax=None, **kwargs):
+    """Draws a Dalitz plot of a three body decay. 
+    Basically it is a 2d plotting function, but when the `masses` array is given (mother mass, mA, mB, mC), the boundary can also be shown. 
+
+    Args:
+        m1 (_type_): _description_
+        m2 (_type_): _description_
+        xlab (str, optional): _description_. Defaults to ''.
+        ylab (str, optional): _description_. Defaults to ''.
+        masses (list, optional): _description_. Defaults to [].
+        boundary (bool, optional): _description_. Defaults to False.
+        weights (_type_, optional): _description_. Defaults to None.
+        log (bool, optional): _description_. Defaults to False.
+        logz (bool, optional): _description_. Defaults to False.
+        bininfo (bool, optional): _description_. Defaults to False.
+        ax (_type_, optional): _description_. Defaults to None.
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+    """    
     # awkward to numpy if needed
     m1a = m1.to_numpy() if m1 is ak.highlevel.Array else m1
     m2a = m2.to_numpy() if m2 is ak.highlevel.Array else m2
@@ -486,21 +580,6 @@ def plot_signal_and_backgrond_distributions(data, variable, metric_variable,
     return fig, ax
 
 
-def adaptive_bin_edges(a, **kwargs):
-    npa = a.to_numpy() if type(a) == ak.highlevel.Array else a
-    xmin = np.min(npa)
-    xmax = np.max(npa)    
-    if 'range' in kwargs:
-        xmin, xmax = kwargs['range']
-    bin_edges = [xmin]
-    x_bins = kwargs.get('bins', 10)
-    for i in range(x_bins - 1):
-        mask = np.logical_and(xmin <= npa, npa <= xmax)
-        bin_edges.append(np.quantile(npa[mask], (i + 1) / x_bins))
-    bin_edges.append(xmax)
-    return bin_edges
-
-
 def plot_efficiency(passed, total, 
                     name=None, unit=None, 
                     ax=None, **kwargs):
@@ -546,7 +625,7 @@ def plot_efficiency(passed, total,
                 linestyle='', marker='.', **kwargs)
     ax.set_ylabel('Efficiency')
     ax.set_ylim(0, 1.1)
-    ax.set_xlabel(f'{name}'+(' [{unit}]' if unit is not None else ''))
+    ax.set_xlabel(f'{name}'+(f' [{unit}]' if unit is not None else ''))
     ax.set_xlim(rng[0], rng[1])
     ax.plot( ax.get_xlim(), [1,1], 'r--')
     return fig, ax if ax is None else ax
@@ -577,10 +656,10 @@ def plot_efficiency2d(passed, total,
     # define binning scheme
     rng = kwargs.get('range', None)
     if rng is None:
-        xmin = np.min( [np.min(passed[0]), np.min(total[0])] )
-        xmax = np.max( [np.max(passed[0]), np.max(total[0])] )
-        ymin = np.min( [np.min(passed[1]), np.min(total[1])] )
-        ymax = np.max( [np.max(passed[1]), np.max(total[1])] )
+        xmin = np.min( [np.min(passed[:, 0]), np.min(total[:, 0])] )
+        xmax = np.max( [np.max(passed[:, 0]), np.max(total[:, 0])] )
+        ymin = np.min( [np.min(passed[:, 1]), np.min(total[:, 1])] )
+        ymax = np.max( [np.max(passed[:, 1]), np.max(total[:, 1])] )
         rng = ((xmin, xmax), (ymin, ymax))
     bins = kwargs.get('bins', 10)
     try: 
@@ -592,11 +671,11 @@ def plot_efficiency2d(passed, total,
     # calculate histograms
     xbin_edges = np.linspace(rng[0][0], rng[0][1], xbins+1)
     ybin_edges = np.linspace(rng[1][0], rng[1][1], ybins+1)
-    hpassed = np.histogram2d(passed[0], passed[1], bins=(xbins,ybins), range=rng, 
+    hpassed = np.histogram2d(passed[:, 0], passed[:, 1], bins=(xbins,ybins), range=rng, 
                              weights=wpassed)
-    htotal = np.histogram2d(total[0], total[1], bins=(xbins,ybins), range=rng, 
+    htotal = np.histogram2d(total[:, 0], total[:, 1], bins=(xbins,ybins), range=rng, 
                             weights=wtotal)
-    hsumw2_total = np.histogram2d(total[0], total[1], bins=(xbins,ybins), range=rng,
+    hsumw2_total = np.histogram2d(total[:, 0], total[:, 1], bins=(xbins,ybins), range=rng,
                                   weights=(wtotal**2 if wtotal is not None else None) )
     # calculate efficiency
     eff, eff_cl = get_efficiency_array(np.matrix.flatten(hpassed[0]), 
@@ -845,6 +924,42 @@ def plot_2darray(data, xbins=None, ybins=None, zrange=None,
         return ax
 
 
+def plot_graph(x, y, xerr=None, yerr=None, xlabel='', ylabel='', title='', ax=None, **kwargs):
+    """Plots a graph with x and y values
+
+    Args:
+        x (array): x values
+        y (array): y values
+        xerr (array, optional): x error values. Defaults to None.
+        yerr (array, optional): y error values. Defaults to None.
+        xlabel (str, optional): x axis label. Defaults to ''.
+        ylabel (str, optional): y axis label. Defaults to ''.
+        title (str, optional): plot title. Defaults to ''.
+        ax (axis, optional): the axis where to make the plot. Defaults to None.
+
+    Returns:
+        fig, ax: figure and axes
+    """
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
+    if xerr is not None or yerr is not None:
+        ax.errorbar(x, y, xerr=xerr, yerr=yerr, **kwargs)
+    else:
+        ax.plot(x, y, **kwargs)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    try:
+        fig.tight_layout()
+        return fig, ax
+    except Exception as e:
+        print(f"Warning: tight_layout() failed due to: {e}")
+        return ax
+
+
 def configure_plot_layout(fig, method='tight_layout'):
     """Configure plot layout to prevent text overlapping.
 
@@ -867,3 +982,55 @@ def configure_plot_layout(fig, method='tight_layout'):
         )
     else:  # default: tight_layout
         plt.tight_layout(pad=1.5, h_pad=2.0, w_pad=1.5)
+
+
+def create_fit_figure_grid(nrows=4, ncols=2, figsize=(20,34)):
+    """
+    Create a figure with a grid of subplots, each containing two axes
+    suitable for plotFitAndResidualsMPL output.
+
+    Args:
+        nrows (int): Number of rows in the grid.
+        ncols (int): Number of columns in the grid.
+        figsize (tuple): Size of the figure (width, height).
+    
+    Returns:
+        fig: matplotlib figure
+        axes_pairs: list of (ax1, ax2) tuples for each subplot
+    """
+    fig = plt.figure(figsize=figsize)
+    main_gs = fig.add_gridspec(nrows, ncols, hspace=0.3, wspace=0.3, top=0.95)
+
+    axes_pairs = []
+    for row in range(nrows):
+        for col in range(ncols):
+            nested_gs = gridspec.GridSpecFromSubplotSpec(
+                2, 1, main_gs[row, col], 
+                height_ratios=[1, 3], 
+                hspace=0.1
+            )
+            ax1 = fig.add_subplot(nested_gs[0, 0])  # Residuals
+            ax2 = fig.add_subplot(nested_gs[1, 0], sharex=ax1)  # Fit
+            axes_pairs.append((ax1, ax2))
+
+    return fig, axes_pairs
+
+
+def hide_unused_axes(ax_grid, used_slots):
+    """Hide subplot slots that were not used for plotting.
+
+    Args:
+        ax_grid (array-like): 2D array of axes objects.
+        used_slots (set of tuples): Set of (row, col) indices indicating which axes were used for plotting. Unused axes will be hidden.
+
+    Returns:
+        None: The function modifies the visibility of axes in place.
+    """
+    ax_array = np.asarray(ax_grid)
+    if ax_array.ndim == 1:
+        # Keep behavior robust for single-row/single-column layouts.
+        ax_array = ax_array.reshape(1, -1)
+    for y in range(ax_array.shape[0]):
+        for x in range(ax_array.shape[1]):
+            if (y, x) not in used_slots:
+                ax_array[y, x].set_visible(False)

@@ -1,3 +1,5 @@
+from ._root_import import import_root_with_proxy
+r, _HAS_ROOT = import_root_with_proxy()
 from concurrent.futures import ThreadPoolExecutor
 from itertools import repeat
 from typing import Iterable, Iterator
@@ -6,6 +8,9 @@ import uproot
 import pandas as pd
 import os
 from pathlib import Path
+from .root_helpers import require_root
+from .utils import remove_newlines
+import yaml
 
 
 def load_data(filename):
@@ -97,6 +102,47 @@ def iter_file_dfs(
                 yield result
 
 
+def get_concat_df(name, data_files,
+               branches=None, filter=None, 
+               nfiles=None, nstart=0, library=None):
+    """Get a concatenation of tuples from data files
+
+    Args:
+        name (str): the tuples name
+        data_files (list): list of data files.
+        branches (list, optional): the list of branches to load. Defaults to None.
+        filter (str, optional): the filter to apply. Defaults to None.
+        nfiles (int, optional): the number of files to load. Defaults to None.
+        nstart (int, optional): the index of the file to start the list with. Defaults to 0.
+        library (str, optional): the library to convert the data to. Defaults to None.
+
+    Raises:
+        ValueError: Invalid data type for source
+        ValueError: Invalid list for data type in source
+        ValueError: Invalid name for data type in source
+
+    Returns:
+        array: An array with all or the specified variables
+    """
+    if type(data_files) is not list:
+        raise ValueError('Invalid data (not a list)')
+    if library not in [None, 'pd', 'np']:
+        raise ValueError(f'Invalid library: {library} (must be in [None, "pd", "np"])')
+    data_files = reduce_data_files(data_files, nfiles, nstart)
+    df = uproot.concatenate([f"{fname}:{name}" for fname in data_files],
+                                   step_size = '200 MB',
+                                   expressions=branches, filter_name=filter)
+    if library == 'pd':
+        # Convert to pandas DataFrame
+        pd_df = pd.DataFrame(ak.to_list(df))
+        return pd_df
+    if library == 'np':
+        # Convert to numpy array
+        np_df = df.to_numpy()
+        return np_df
+    return df
+    
+
 def load_df_incremental(
     paths,
     branches,
@@ -174,3 +220,79 @@ def cache_is_valid(paths, cache_path):
             # if mtime fails for any file, fall back to rebuild
             return False
     return True
+
+
+def reduce_data_files(data_files, nfiles=None, nstart=None):
+    """Given a lis of data files, reduce the list to a subset
+
+    Args:
+        data_files (list): the list of data files.
+        nfiles (int, optional): the number of files to keep. Defaults to None.
+        nstart (int, optional): the number of files to skip. Defaults to None.
+
+    Returns:
+        list: the subset of data files
+    """
+    if type(data_files) is not list:
+        raise ValueError('Invalid data (not a list)')
+    if nstart is not None and type(nstart) is not int:
+        raise ValueError(f'Invalid nstart: {nstart} (not an integer)')
+    if nfiles is not None and type(nfiles) is not int:
+        raise ValueError(f'Invalid nfiles: {nfiles} (not an integer)')
+    if nstart is None:
+        nstart = 0
+    if nfiles is None:
+        nfiles = len(data_files)-nstart
+    if nfiles < 0 or nstart < 0:
+        raise ValueError(f'Invalid parameters: {nstart} and {nfiles} (must be positive)')
+    if nstart > len(data_files):
+        raise ValueError(f'Invalid parameters: {nstart} (greater than the number of files)')
+    if nfiles > len(data_files)-nstart:
+        print(f'Invalid parameters: {nfiles} (greater than the number of files). Reducing to {len(data_files)-nstart}')
+        nfiles = len(data_files)-nstart
+    return data_files[nstart:nstart+nfiles]
+
+
+def get_rdf(name, data,
+            nfiles=None, nstart=0, daskclient=None, verbose=False):
+    """Gets a `ROOT.TChain` from data files
+
+    Args:
+        name (str): the tuple name.
+        data (list): list of data files.
+        nfiles (int, optional): the number of files to load. Defaults to None.
+        nstart (int, optional): the index of the file to start the list with. Defaults to 0.
+        daskclient (dask.distributed.Client, optional): the dask client to use. Defaults to None.
+
+    Raises:
+        ValueError: Invalid data type for source
+        ValueError: Invalid list for data type in source
+
+    Returns:
+        ROOT.RDataFrame: A `ROOT.RDataFrame` with all the data
+    """
+    if not type(data) is list:
+        raise ValueError('Invalid data (not a list)')
+    require_root()
+    data_files = reduce_data_files(data, nfiles, nstart)
+    if verbose: 
+        print(data_files)
+    rdf = r.RDataFrame(name, data_files) if daskclient is None  else \
+          r.RDF.Experimental.Distributed.Dask.RDataFrame(name, data_files, daskclient=daskclient)
+    return rdf
+
+
+def load_selection_options(filename):
+    """Load selection options from a YAML file
+
+    Args:
+        filename (str): the name of the file to load
+
+    Returns:
+        dict: the selection options
+    """
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f'File not found: {filename}')
+    with open(filename, 'r') as f:
+        options = remove_newlines(yaml.safe_load(f))
+    return options

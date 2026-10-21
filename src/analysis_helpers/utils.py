@@ -2,6 +2,8 @@ import fnmatch
 import os
 import subprocess
 import tempfile
+import awkward as ak
+import numpy as np
 
 
 def run_command(command, input_text=None):
@@ -54,3 +56,62 @@ def get_matching_files(directory, pattern):
             file_path = os.path.join(root, filename)
             matching_files.append(file_path)
     return matching_files
+
+
+def remove_newlines(data):
+    """Remove newlines from a dictionary, list, or string
+
+    Args:
+        data (dict, list, str): a dictionary, list, or string to remove newlines from
+
+    Returns:
+        dict: data with newlines removed
+    """    
+    if isinstance(data, dict):
+        # Recursively go through dictionary values
+        return {key: remove_newlines(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        # Recursively go through each element of the list
+        return [remove_newlines(item) for item in data]
+    elif isinstance(data, str):
+        # Strip newlines from strings
+        return data.replace('\n', '')
+    else:
+        # Return the data unchanged if it's not a dict, list, or string
+        return data
+    
+
+def to_numpy(a):
+    """Transforms an array to numpy.array if it is an awkward array or list.
+
+    Args:
+        a (array): The input array.
+
+    Returns:
+        np.ndarray: The transformed numpy array.
+    """
+    if type(a) == ak.highlevel.Array:
+        return a.to_numpy()
+    return np.asarray(a)
+
+
+def get_mask(data, range=None):
+    """Obtain a selection filter mask
+
+    Args:
+        data (np.ndarray): The input data array.
+        range (tuple): The range (min, max) to filter the data.
+
+    Raises:
+        ValueError: If the input data is not 1D.
+        ValueError: If the range is not a tuple of (min, max).
+
+    Returns:
+        np.ndarray: A boolean mask array.
+    """    
+    if data.ndim != 1:
+        raise ValueError("Input data must be 1D.")
+    if range is None: return np.full_like(data, True, dtype=bool)
+    if len(range) != 2:
+        raise ValueError("Range 'range' must be a tuple of (min, max)")
+    return (data >= range[0]) & (data <= range[1])

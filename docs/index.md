@@ -55,4 +55,5 @@ require_root()  # Raises ImportError when ROOT is missing
 | [kinematics](api/kinematics.md) | Kinematic calculations |
 | [plotting](api/plotting.md) | Plotting utilities |
 | [root_helpers](api/root_helpers.md) | PyROOT convenience wrappers |
+| [statistics](api/statistics.md) | Statistical utilities |
 | [utils](api/utils.md) | General utilities |

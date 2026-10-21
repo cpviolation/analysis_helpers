@@ -1,36 +1,28 @@
 import os
-try:
-    import ROOT as r  # type: ignore[import-not-found]
-    _HAS_ROOT = True
-except ModuleNotFoundError:
-    _HAS_ROOT = False
+from ._root_import import import_root_with_proxy as _import_root_with_proxy, is_root_available as _is_root_available, require_root as _require_root
 
-    class _MissingROOT:
-        """Proxy that raises a clear error only when ROOT-backed code is used."""
-
-        def __getattr__(self, _name):
-            raise ImportError(
-                "PyROOT is not available. Install and configure ROOT to use ROOT-dependent helpers."
-            )
-
-    r = _MissingROOT()
+r, _HAS_ROOT = _import_root_with_proxy()
 from array import array
 import pandas as pd
 import numpy as np
 import uproot
 
+def import_root_with_proxy():
+    """Import ROOT with a proxy to avoid issues with ROOT's global state."""
+    return _import_root_with_proxy()
+
 
 def is_root_available():
     """Return whether PyROOT can be imported."""
-    return _HAS_ROOT
+    return _is_root_available(_HAS_ROOT)
 
 
 def require_root():
     """Raise a clear exception if PyROOT is not available."""
-    if not _HAS_ROOT:
-        raise ImportError(
-            "PyROOT is not available. Install and configure ROOT to use this function."
-        )
+    _require_root(
+        _HAS_ROOT,
+        "PyROOT is not available. Install and configure ROOT to use this function.",
+    )
 
 ##########
 # Load libraries
@@ -235,7 +227,10 @@ def Canvas(name='c1', width=600, height=600, title=''):
     """
     require_root()
     if title=='':title=name
-    return {'canvas': r.TCanvas(name, title, width, height), 'extra':[]}
+    canvas = r.TCanvas(name, title, width, height)
+    # Avoid crashes at Python shutdown due to TCanvas double deletion via CPyCppyy.
+    r.SetOwnership(canvas, False)
+    return {'canvas': canvas, 'extra':[]}
 
 def SaveCansAsPdf(pdfName, cans):
     """Save a list of TCanvas objects into a single PDF file
@@ -342,11 +337,23 @@ def ROOT2MPLText(text):
     Returns:
         str: matplotlib text
     """
-    mpl_text = text
-    if '#' in text or '^' in text or '_' in text:
-        mpl_text = text.replace('#','\\')
-        mpl_text = f'${mpl_text}$'
-    return mpl_text
+    mpl_text = str(text)
+    if '#' not in mpl_text and '^' not in mpl_text and '_' not in mpl_text:
+        return mpl_text
+
+    # Convert ROOT text-style commands to Matplotlib mathtext-friendly forms.
+    replacements = {
+        '#it{': r'\mathit{',
+        '#bf{': r'\mathbf{',
+        '#rm{': r'\mathrm{',
+        '#bar{': r'\overline{',
+    }
+    for old, new in replacements.items():
+        mpl_text = mpl_text.replace(old, new)
+
+    mpl_text = mpl_text.replace('#', '\\')
+    mpl_text = mpl_text.replace('%', r'\%')
+    return f'${mpl_text}$'
 
 
 # Create and save histograms using uproot
