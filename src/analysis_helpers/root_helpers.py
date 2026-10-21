@@ -253,7 +253,10 @@ def SaveCansAsPdf(pdfName, cans):
 
 
 def TTree2Array(tree, leaves=None):
-    """Transform a ROOT TTree into a numpy array
+    """Transform a ROOT TTree into a numpy array.
+
+    ROOT's ``RDataFrame(tree).AsNumpy(...)`` does not support in-memory TTrees that
+    are not linked to a file. In that case, fall back to reading the entries one by one.
 
     Args:
         tree (TTree): the ROOT TTree object
@@ -263,13 +266,30 @@ def TTree2Array(tree, leaves=None):
         array: The numpy array
     """
     require_root()
-    # tree_branches = [l.GetName() for l in tree.GetListOfLeaves()] if leaves is None else leaves
-    # arr = np.asarray([[ev.__getattr__(tb) for tb in tree_branches] for ev in tree ])
-    r.EnableImplicitMT()  # opzionale: multithreading
-    rdf = r.RDataFrame(tree)
-    d = rdf.AsNumpy(columns=leaves)
-    arr = np.column_stack([d[leaf] for leaf in leaves])
-    return arr
+    if leaves is None:
+        leaves = [l.GetName() for l in tree.GetListOfLeaves()]
+    if not leaves:
+        return np.empty((0, 0), dtype=float)
+
+    try:
+        r.EnableImplicitMT()
+        rdf = r.RDataFrame(tree)
+        d = rdf.AsNumpy(columns=leaves)
+        return np.column_stack([d[leaf] for leaf in leaves])
+    except Exception:
+        rows = []
+        for entry in range(tree.GetEntries()):
+            tree.GetEntry(entry)
+            row = []
+            for leaf in leaves:
+                val = getattr(tree, leaf)
+                if hasattr(val, 'value'):
+                    val = val.value
+                row.append(float(val))
+            rows.append(row)
+        if not rows:
+            return np.empty((0, len(leaves)), dtype=float)
+        return np.asarray(rows)
 
 
 def ROOT2MPLLineStyle(lineStyle):
