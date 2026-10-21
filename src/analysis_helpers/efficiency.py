@@ -162,7 +162,7 @@ def get_efficiency_array(passed, total, sumw2_total=None):
     if sumw2_total is not None:
         eff_cl = np.array(wilson_interval(eff, total**2 / sumw2_total))
     else:
-        eff_err = np.array(binomial_error(eff, total))
+        eff_err = np.array(binomial_error(eff, total) / total)
         eff_cl = np.array([eff - eff_err[0], eff + eff_err[1]])
     # add protection against efficiency > 1 due to mostly events with negative weights being removed
     eff = np.where(eff > 1, 1, eff)
