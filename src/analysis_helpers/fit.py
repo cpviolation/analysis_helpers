@@ -760,6 +760,7 @@ class FitUtils:
         for i in range(len(data_err)):
             if data_err[i] == 0: data_err[i] = 1.
         norm_pull = pull / data_err
+        norm_pull = np.where(np.isnan(norm_pull), 0.0, norm_pull)
         return norm_pull, bins_centers
     
 

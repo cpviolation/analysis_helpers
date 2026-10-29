@@ -13,6 +13,19 @@ def test_fit_models_constructor_is_import_safe():
     assert model.name == "unit-test"
 
 
+def test_pull_array_replaces_nan_normalized_pulls():
+    fit_utils = fit.FitUtils(_name="unit-test")
+
+    pulls, bin_centers = fit_utils.pull_array(
+        (np.array([1.0, 0.0]), np.array([0.0, 1.0, 2.0])),
+        np.array([np.nan, 0.0]),
+        scale_factor=1,
+    )
+
+    np.testing.assert_array_equal(pulls, np.array([0.0, 0.0]))
+    np.testing.assert_array_equal(bin_centers, np.array([0.5, 1.5]))
+
+
 def test_ws_fails_cleanly_without_root():
     if fit._HAS_ROOT:
         pytest.skip("PyROOT is available; optional-ROOT fallback path is not active")

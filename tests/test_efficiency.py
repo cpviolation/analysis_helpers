@@ -63,10 +63,10 @@ def test_get_efficiency_array_without_weights_uses_binomial_error():
     efficiency, interval = get_efficiency_array(passed, total)
 
     expected_efficiency = np.array([0.5, 0.8])
-    expected_error = binomial_error(expected_efficiency, total)
+    expected_error = binomial_error(expected_efficiency, total) / total
     assert np.allclose(efficiency, expected_efficiency)
-    assert np.allclose(interval[0], expected_efficiency - expected_error[0])
-    assert np.allclose(interval[1], expected_efficiency + expected_error[1])
+    assert np.allclose(interval[0], expected_efficiency - expected_error)
+    assert np.allclose(interval[1], expected_efficiency + expected_error)
 
 
 def test_get_efficiency_array_with_weights_uses_wilson_interval():
