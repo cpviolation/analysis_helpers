@@ -735,7 +735,7 @@ class FitUtils:
 
         return extra
     
-    def pull_array(self, hist, model, scale_factor=None, poisson=True):
+    def pull_array(self, hist, model, scale_factor=None, poisson=True, data_errors=None):
         """Calculate pulls of data and model
 
         Args:
@@ -743,6 +743,7 @@ class FitUtils:
             model (array): model values to compare against data
             scale_factor (float, optional): scaling factor for model values. If None, uses bin width. Defaults to None.
             poisson (bool, optional): Use Poisson error for the counts. Defaults to True.
+            data_errors (tuple, optional): Lower and upper uncertainties for the data counts.
 
         Returns:
             tuple: the normalised pulls and the bin centers
@@ -756,12 +757,25 @@ class FitUtils:
         model_counts = model * sf
         # calculate pulls
         pull = data_counts - model_counts
-        data_err = np.sqrt(data_counts) if poisson else np.sqrt(data_counts) # to be fixed
+        if data_errors is None:
+            data_err_low = data_err_high = np.sqrt(data_counts)
+        else:
+            data_err_low, data_err_high = data_errors
+        data_err = np.where(pull >= 0, data_err_low, data_err_high)
         for i in range(len(data_err)):
             if data_err[i] == 0: data_err[i] = 1.
         norm_pull = pull / data_err
         norm_pull = np.where(np.isnan(norm_pull), 0.0, norm_pull)
         return norm_pull, bins_centers
+
+    @staticmethod
+    def _get_data_bin_errors(data_hist):
+        """Return the lower and upper bin uncertainties stored in a RooHist."""
+        n_points = int(data_hist.GetN())
+        return (
+            np.array([data_hist.GetErrorYlow(i) for i in range(n_points)]),
+            np.array([data_hist.GetErrorYhigh(i) for i in range(n_points)]),
+        )
     
 
     def plotFitAndResidualsMPL(self, frame, axes=None, labels=None):
@@ -802,6 +816,7 @@ class FitUtils:
             uprf_any = cast(Any, uprf)
             if hasattr(uprf_any, 'close'):
                 uprf_any.close()
+        data_errors = self._get_data_bin_errors(frame.getObject(0))
         # Plotting
         fig = None
         if axes is None:
@@ -817,7 +832,7 @@ class FitUtils:
         else:
             ax1, ax2 = axes
         # plot the histogram of the data
-        mplhep.histplot(his,yerr=np.sqrt(his[0]),histtype='errorbar',color='black',label='data' if labels is None else labels[0],ax=ax2)
+        mplhep.histplot(his,yerr=data_errors,histtype='errorbar',color='black',label='data' if labels is None else labels[0],ax=ax2)
         ax2.set_xlabel( ROOT2MPLText(frame.GetXaxis().GetTitle()) )
         ax2.set_ylabel( ROOT2MPLText(frame.GetYaxis().GetTitle()) )
         ax2.set_xlim(his[1][0],his[1][-1])
@@ -830,7 +845,8 @@ class FitUtils:
                      label=gr['title'] if labels is None else (labels[i+1] if i+1<len(labels) else None))
         ax2.legend()
         # create the array of the pulls
-        pullA, bin_centers = self.pull_array(his, grs[-1]['y'], scale_factor=1)
+        pullA, bin_centers = self.pull_array(
+            his, grs[-1]['y'], scale_factor=1, data_errors=data_errors)
         # set limits for the pull plot and label
         ax1.set_xlim(his[1][0],his[1][-1])
         ax1.set_ylim(-5,5)
