@@ -26,6 +26,36 @@ def test_pull_array_replaces_nan_normalized_pulls():
     np.testing.assert_array_equal(bin_centers, np.array([0.5, 1.5]))
 
 
+def test_pull_array_uses_asymmetric_data_errors():
+    fit_utils = fit.FitUtils(_name="unit-test")
+
+    pulls, _ = fit_utils.pull_array(
+        (np.array([9.0, 9.0]), np.array([0.0, 1.0, 2.0])),
+        np.array([7.0, 11.0]),
+        scale_factor=1,
+        data_errors=(np.array([2.0, 3.0]), np.array([4.0, 5.0])),
+    )
+
+    np.testing.assert_allclose(pulls, np.array([1.0, -0.4]))
+
+
+def test_get_data_bin_errors_reads_roohist_uncertainties():
+    class _FakeRooHist:
+        def GetN(self):
+            return 2
+
+        def GetErrorYlow(self, index):
+            return [1.0, 2.0][index]
+
+        def GetErrorYhigh(self, index):
+            return [3.0, 4.0][index]
+
+    errors = fit.FitUtils._get_data_bin_errors(_FakeRooHist())
+
+    np.testing.assert_array_equal(errors[0], np.array([1.0, 2.0]))
+    np.testing.assert_array_equal(errors[1], np.array([3.0, 4.0]))
+
+
 def test_ws_fails_cleanly_without_root():
     if fit._HAS_ROOT:
         pytest.skip("PyROOT is available; optional-ROOT fallback path is not active")
