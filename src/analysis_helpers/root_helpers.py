@@ -248,7 +248,10 @@ def SaveCansAsPdf(pdfName, cans):
 
 
 def TTree2Array(tree, leaves=None):
-    """Transform a ROOT TTree into a numpy array
+    """Transform a ROOT TTree into a numpy array.
+
+    ROOT's ``RDataFrame(tree).AsNumpy(...)`` does not support in-memory TTrees that
+    are not linked to a file. In that case, fall back to reading the entries one by one.
 
     Args:
         tree (TTree): the ROOT TTree object
@@ -258,22 +261,30 @@ def TTree2Array(tree, leaves=None):
         array: The numpy array
     """
     require_root()
-    tree_leaves = [leaf.GetName() for leaf in tree.GetListOfLeaves()]
-    leaves = tree_leaves if leaves is None else list(leaves)
-    if len(leaves) == 0:
-        return np.empty((tree.GetEntries(), 0))
-    # RDataFrame is fast, but it requires a file-backed tree.
-    if getattr(tree, 'GetCurrentFile', lambda: None)():
-        r.EnableImplicitMT()  # opzionale: multithreading
+    if leaves is None:
+        leaves = [l.GetName() for l in tree.GetListOfLeaves()]
+    if not leaves:
+        return np.empty((0, 0), dtype=float)
+
+    try:
+        r.EnableImplicitMT()
         rdf = r.RDataFrame(tree)
         d = rdf.AsNumpy(columns=leaves)
         return np.column_stack([d[leaf] for leaf in leaves])
-    # loop on in-memory tree, which is slower but works without a file
-    rows = []
-    for entry_idx in range(tree.GetEntries()):
-        tree.GetEntry(entry_idx)
-        rows.append([getattr(tree, leaf) for leaf in leaves])
-    return np.asarray(rows)
+    except Exception:
+        rows = []
+        for entry in range(tree.GetEntries()):
+            tree.GetEntry(entry)
+            row = []
+            for leaf in leaves:
+                val = getattr(tree, leaf)
+                if hasattr(val, 'value'):
+                    val = val.value
+                row.append(float(val))
+            rows.append(row)
+        if not rows:
+            return np.empty((0, len(leaves)), dtype=float)
+        return np.asarray(rows)
 
 
 def ROOT2MPLLineStyle(lineStyle):
