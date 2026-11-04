@@ -74,3 +74,25 @@ def test_combined_phase_space_concatenates_and_filters_samples(dalitz_phase_spac
 
     assert len(filtered) > 0
     assert phase_space.inside(filtered).all()
+
+
+def test_decay_time_truncated_sampling_respects_window_without_rejection():
+    phase_space = DecayTimePhaseSpace(tau=1.0, tmin=2.0, tmax=5.0)
+    sample = phase_space.unfiltered_sample(5000)
+
+    assert phase_space.bounds() == [(2.0, 5.0)]
+    assert len(phase_space.filter(sample)) == 5000
+    assert ((sample > 2.0) & (sample < 5.0)).all()
+
+
+def test_decay_time_tmin_only_is_shifted_exponential():
+    phase_space = DecayTimePhaseSpace(tau=1.5, tmin=3.0)
+    t = phase_space.t(phase_space.unfiltered_sample(50000))
+
+    assert (t > 3.0).all()
+    assert np.mean(t - 3.0) == pytest.approx(1.5, rel=0.05)
+
+
+def test_decay_time_rejects_invalid_window():
+    with pytest.raises(ValueError):
+        DecayTimePhaseSpace(tmin=2.0, tmax=1.0)

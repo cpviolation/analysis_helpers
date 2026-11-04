@@ -469,27 +469,34 @@ class DecayTimePhaseSpace:
     """1-D decay-time phase space.
 
     Generates decay times t drawn from an exponential distribution with
-    lifetime ``tau`` (t > 0).
+    lifetime ``tau``, optionally truncated to ``tmin < t < tmax``.
+
+    Truncation is applied analytically in the sampler (truncated inverse CDF),
+    so no generated point is rejected, however tight the window is.
     """
 
-    def __init__(self, tau: float = 1.0):
+    def __init__(self, tau: float = 1.0, tmin: float = 0.0, tmax: float = float("inf")):
+        if not 0.0 <= tmin < tmax:
+            raise ValueError("Require 0 <= tmin < tmax")
         self.tau = tau
+        self.tmin = tmin
+        self.tmax = tmax
 
     # ------------------------------------------------------------------
     def dimensionality(self) -> int:
         return 1
 
     def bounds(self):
-        return [(0.0, float("inf"))]
+        return [(self.tmin, self.tmax)]
 
     # ------------------------------------------------------------------
     def inside(self, x: np.ndarray) -> np.ndarray:
-        """Boolean mask: True where t > 0.
+        """Boolean mask: True where tmin < t < tmax.
 
         ``x`` may be shape (N,) or (N, 1); returns shape (N,).
         """
         t = x[:, 0] if x.ndim == 2 else x
-        return t > 0.0
+        return (t > self.tmin) & (t < self.tmax)
 
     def filter(self, x: np.ndarray) -> np.ndarray:
         return x[self.inside(x)]
@@ -498,19 +505,22 @@ class DecayTimePhaseSpace:
     def unfiltered_sample(self, size: int, maximum=None) -> np.ndarray:
         """Generate *size* points; returns shape (size, 1) [or (size, 2) with majorant].
 
-        Decay times are drawn via inverse-CDF: t = -tau * ln(1-U), U~Uniform(0,1).
+        Decay times are drawn via the truncated inverse-CDF
+        t = tmin - tau * ln(1 - U * (1 - exp(-(tmax - tmin)/tau))), U~Uniform(0,1),
+        which is exactly the exponential conditioned on tmin < t < tmax.
         If ``maximum`` is given, an extra uniform(0, maximum) column is appended
         (classic majorant column for accept-reject MC).
         """
         u = np.random.uniform(0.0, 1.0, size)
-        t = -self.tau * np.log1p(-u)           # numerically stable
+        span = -np.expm1(-(self.tmax - self.tmin) / self.tau)  # 1 if tmax=inf
+        t = self.tmin - self.tau * np.log1p(-u * span)         # numerically stable
         cols = [t[:, np.newaxis]]
         if maximum is not None:
             cols.append(np.random.uniform(0.0, maximum, (size, 1)))
         return np.concatenate(cols, axis=1)
 
     def uniform_sample(self, size: int, maximum=None) -> np.ndarray:
-        """Filtered sample — all returned points satisfy t > 0 (always true here)."""
+        """Filtered sample — all points already satisfy tmin < t < tmax by construction."""
         return self.filter(self.unfiltered_sample(size, maximum))
 
     # ------------------------------------------------------------------
