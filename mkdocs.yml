@@ -58,6 +58,7 @@ nav:
     - api/index.md
     - asymmetry: api/asymmetry.md
     - dalitz: api/dalitz.md
+    - phasespace: api/phasespace.md
     - efficiency: api/efficiency.md
     - fit: api/fit.md
     - kinematics: api/kinematics.md

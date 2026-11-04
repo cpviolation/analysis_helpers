@@ -49,6 +49,7 @@ require_root()  # Raises ImportError when ROOT is missing
 |--------|-------------|
 | [asymmetry](api/asymmetry.md) | Asymmetry computations |
 | [dalitz](api/dalitz.md) | Dalitz plot utilities |
+| [phasespace](api/phasespace.md) | Dalitz, decay-time, and combined phase spaces |
 | [efficiency](api/efficiency.md) | Efficiency estimation |
 | [fit](api/fit.md) | RooFit-based fitting helpers |
 | [io](api/io.md) | Input-Output helpers |
