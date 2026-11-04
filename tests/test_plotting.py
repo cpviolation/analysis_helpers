@@ -7,11 +7,24 @@ import pytest
 
 from analysis_helpers.plotting import (
     create_subplots,
+    histogram_with_error,
     plot_2darray,
     plot_hist,
     plot_hist2d,
     plot_vertical_lines,
 )
+
+
+def test_histogram_with_error_applies_weights():
+    data = np.array([0.1, 0.1, 0.2, 0.8, 0.8, 0.9])
+    weights = np.array([0.1, 0.1, 0.2, 0.8, 0.8, 0.9])
+
+    (hist, _), errors = histogram_with_error(
+        data, bins=2, range=(0.0, 1.0), weights=weights
+    )
+
+    assert hist == pytest.approx([0.4, 2.5])
+    assert errors == pytest.approx(np.sqrt([0.06, 2.09]))
 
 
 def test_plot_hist_sets_labels_and_limits():
