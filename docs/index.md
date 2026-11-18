@@ -48,6 +48,7 @@ require_root()  # Raises ImportError when ROOT is missing
 | Module | Description |
 |--------|-------------|
 | [asymmetry](api/asymmetry.md) | Asymmetry computations |
+| [binning](api/binning.md) | Binning utilities |
 | [dalitz](api/dalitz.md) | Dalitz plot utilities |
 | [phasespace](api/phasespace.md) | Dalitz, decay-time, and combined phase spaces |
 | [efficiency](api/efficiency.md) | Efficiency estimation |
